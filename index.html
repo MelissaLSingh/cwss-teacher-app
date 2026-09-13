@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>CWSS Teacher Management System</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #17212b; -webkit-tap-highlight-color: transparent; }
+    .topbar { background: #17365d; color: white; padding: 14px 16px; }
+    .topbar h1 { margin: 0 0 4px; font-size: 19px; }
+    .topbar p { margin: 2px 0; font-size: 12px; opacity: .92; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 10px; }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .tab-button { min-height: 46px; background: white; color: #17365d; border: 2px solid #cbd2d9; }
+    .tab-button.active { background: #17365d; color: white; border-color: #17365d; }
+    .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .profile { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; font-size: 14px; }
+    label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 13px; }
+    select, input, textarea, button { width: 100%; min-height: 46px; border: 1px solid #c7ced6; border-radius: 9px; padding: 10px; font-size: 16px; }
+    button { cursor: pointer; background: #17365d; color: white; border: 0; font-weight: bold; touch-action: manipulation; }
+    button.secondary { background: #687684; }
+    button.outline { background: white; color: #17365d; border: 2px solid #17365d; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .class-picker { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .period-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+    .period-button { min-height: 50px; background: white; color: #17212b; border: 2px solid #cbd2d9; }
+    .period-button.selected { background: #17365d; color: white; border-color: #17365d; }
+    .assignment-button { min-height: 58px; text-align: left; padding: 10px 14px; background: white; color: #17212b; border: 2px solid #d7dde3; }
+    .assignment-button.selected { border-color: #17365d; background: #eaf2fb; }
+    .assignment-main { font-size: 18px; font-weight: 700; }
+    .assignment-sub { font-size: 13px; margin-top: 3px; color: #5c6873; }
+    .date-row { display: flex; gap: 8px; align-items: stretch; }
+    .date-display { flex: 1; min-height: 46px; border: 1px solid #c7ced6; border-radius: 9px; padding: 10px 12px; background: #f8fafb; }
+    .date-label { font-size: 12px; color: #687684; }
+    .date-value { font-weight: 700; margin-top: 2px; }
+    .change-date { width: auto; padding: 10px 14px; white-space: nowrap; }
+    .date-editor { margin-top: 8px; }
+    .student { padding: 12px 0; border-bottom: 1px solid #e5e8eb; }
+    .student-name { font-weight: 700; font-size: 16px; margin-bottom: 9px; line-height: 1.25; }
+    .attendance-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .attendance-btn { min-height: 48px; padding: 6px 4px; font-size: 13px; background: white; color: #26323d; border: 2px solid #cbd2d9; }
+    .attendance-btn.selected { background: #17365d; color: white; border-color: #17365d; }
+    .student-comment { margin-top: 8px; }
+    .student-comment input { min-height: 42px; font-size: 14px; }
+    .message { padding: 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
+    .message.show { display: block; }
+    .error { background: #fdecec; color: #8a1c1c; }
+    .success { background: #eaf7ed; color: #1e6b31; }
+    .info { background: #eaf2fb; color: #1b4f82; }
+    .loading { text-align: center; padding: 30px; }
+    .hidden { display: none !important; }
+    .empty { padding: 20px; text-align: center; color: #687684; }
+    .summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .summary span { background: #f0f3f6; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 700; }
+    .attendance-summary { margin-top: 10px; margin-bottom: 8px; }
+    .attendance-summary span { flex: 1 1 calc(50% - 8px); text-align: center; min-width: 120px; }
+    .attendance-summary strong { font-size: 15px; }
+    .section-title { margin: 0 0 10px; }
+    .report-filters { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .report-filter-full { grid-column: 1 / -1; }
+    .history-item { display: block; width: 100%; text-align: left; background: white; color: #17212b; border: 2px solid #e0e5ea; min-height: 72px; margin-bottom: 8px; padding: 10px 12px; }
+    .history-item:hover { border-color: #17365d; }
+    .history-main { font-weight: 700; font-size: 16px; }
+    .history-sub { font-size: 12px; color: #687684; margin-top: 3px; }
+    .history-counts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+    .history-counts span { font-size: 11px; padding: 3px 7px; background: #f0f3f6; border-radius: 999px; font-weight: 700; }
+.report-subtitle { margin: 16px 0 8px; color: #17365d; }
+    .student-report-header { padding: 10px 0; line-height: 1.5; }
+    .admin-badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eaf2fb; color: #17365d; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    @media (max-width: 560px) {
+      .container { padding: 8px; }
+      .tabs { grid-template-columns: repeat(2, 1fr); }
+      .attendance-buttons { grid-template-columns: repeat(2, 1fr); }
+      .attendance-btn { min-height: 50px; font-size: 14px; }
+      .date-row { flex-direction: column; }
+      .change-date { width: 100%; }
+      .report-filters { grid-template-columns: 1fr; }
+      .report-filter-full { grid-column: auto; }
+    }
+    .connectivity-status {
+      display: inline-flex; align-items: center; gap: 7px; margin-top: 8px;
+      padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: rgba(255,255,255,.12); color: #fff;
+    }
+    .connectivity-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+    .connectivity-status.offline { background: rgba(255,193,7,.18); color: #ffe08a; }
+    .connectivity-status.online { background: rgba(46,204,113,.16); color: #baf5d0; }
+    .offline-notice { margin-top: 8px; font-size: 12px; color: #6b7785; }
+    .pending-sync-status { margin-top: 6px; font-size: 12px; font-weight: 700; color: #ffe08a; }
+    .pending-sync-status.online-ready { color: #baf5d0; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1 id="schoolTitle">Couva West Secondary School</h1>
+    <p id="departmentTitle">Mathematics Information Technology Department</p>
+    <p>Teacher Management System 2026–2027</p>
+    <div id="connectivityStatus" class="connectivity-status online" aria-live="polite">
+      <span class="connectivity-dot"></span><span id="connectivityText">Online</span>
+    </div>
+    <div id="pendingAttendanceStatus" class="pending-sync-status hidden" aria-live="polite"></div>
+  </div>
+
+  <main class="container">
+    <div id="loading" class="card loading">Loading your teacher profile…</div>
+    <div id="error" class="message error"></div>
+    <div id="success" class="message success"></div>
+
+    <section id="app" class="hidden">
+      <div class="card">
+        <h2 class="section-title">Teacher Profile</h2>
+        <div class="profile">
+          <div id="offlineProfileNote" class="offline-notice hidden">Offline data is stored only on this phone for this teacher portal.</div>
+          <div><strong>Name:</strong> <span id="teacherName"></span></div>
+          <div><strong>Google account:</strong> <span id="teacherEmail"></span></div>
+          <div><strong>Role:</strong> <span id="teacherRole"></span></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button type="button" id="attendanceTab" class="tab-button active">Attendance</button>
+        <button type="button" id="historyTab" class="tab-button">Attendance History</button>
+        <button type="button" id="infractionTab" class="tab-button">Infraction</button><button type="button" id="reportsTab" class="tab-button">Reports</button>
+      </div>
+
+      <section id="attendancePanel">
+        <div class="card">
+          <h2 class="section-title">Attendance</h2>
+
+          <div style="margin-bottom:14px">
+            <label>Attendance Date</label>
+            <div class="date-row">
+              <div class="date-display"><div class="date-label" id="dateLabel">Today</div><div class="date-value" id="dateDisplay"></div></div>
+              <button id="changeDate" class="outline change-date">Different day</button>
+            </div>
+            <div id="dateEditor" class="date-editor hidden"><input id="attendanceDate" type="date"></div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label>Subject</label>
+            <div id="subjectDisplay" class="date-display"><div class="date-label">Assigned subject</div><div class="date-value" id="subjectValue"></div></div>
+          </div>
+
+          <label>Your Classes</label>
+          <div id="classPicker" class="class-picker"></div>
+          <div id="selectionSummary" class="summary hidden" style="margin-top:12px"><span id="selectedClass"></span><span id="selectedGroup"></span></div>
+
+          <div style="margin-top:14px">
+            <label>Periods (select one or more)</label>
+            <div id="periodPicker" class="period-picker"></div>
+          </div>
+
+          <div style="margin-top:12px"><button id="loadStudents" disabled>Select a class and period</button></div>
+        </div>
+
+        <div id="studentsCard" class="card hidden">
+          <h2 class="section-title">Student Attendance</h2>
+          <div id="studentCount" class="message info show"></div>
+          <div id="attendanceSummary" class="summary attendance-summary">
+            <span>Total: <strong id="summaryTotal">0</strong></span>
+            <span>Present: <strong id="summaryPresent">0</strong></span>
+            <span>Absent: <strong id="summaryAbsent">0</strong></span>
+            <span>Late: <strong id="summaryLate">0</strong></span>
+            <span>Excused: <strong id="summaryExcused">0</strong></span>
+            <span>Periods: <strong id="summaryPeriods">—</strong></span>
+          </div>
+          <div id="students"></div>
+          <div style="margin-top:16px"><button id="saveAttendance">Save Attendance</button></div>
+        </div>
+      </section>
+
+      <section id="historyPanel" class="hidden">
+        <div class="card">
+          <h2 class="section-title">Attendance History</h2>
+          <div id="historyMode" class="admin-badge hidden">Admin view — department-wide attendance</div>
+          <div class="report-filters">
+            <div id="teacherFilterWrap" class="hidden">
+              <label>Teacher</label><select id="teacherFilter"><option value="">All teachers</option></select>
+            </div>
+            <div><label>Subject</label><select id="historySubject"><option value="">All subjects</option></select></div>
+            <div><label>Class</label><select id="historyClass"><option value="">All classes</option></select></div>
+            <div><label>Group</label><select id="historyGroup"><option value="">All groups</option></select></div>
+            <div><label>Period</label><select id="historyPeriod"><option value="">All periods</option></select></div>
+            <div><label>From</label><input id="historyFrom" type="date"></div>
+            <div><label>To</label><input id="historyTo" type="date"></div>
+            <div class="report-filter-full"><button id="refreshHistory">Refresh History</button></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">Attendance Overview</h2>
+          <div id="reportSummary" class="summary attendance-summary">
+            <span>Sessions: <strong id="reportSessions">0</strong></span>
+            <span>Total Records: <strong id="reportTotal">0</strong></span>
+            <span>Present: <strong id="reportPresent">0</strong></span>
+            <span>Absent: <strong id="reportAbsent">0</strong></span>
+            <span>Late: <strong id="reportLate">0</strong></span>
+            <span>Excused: <strong id="reportExcused">0</strong></span>
+            <span>Attendance Rate: <strong id="reportRate">0%</strong></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">Attendance Sessions</h2>
+          <div id="historyLoading" class="empty">Loading attendance history…</div>
+          <div id="history"></div>
+        </div>
+      </section>
+
+      <section id="reportsPanel" class="hidden">
+        <div class="card">
+          <h2 class="section-title">Reports</h2>
+          <div id="teacherReportsIntro" class="message info show">Choose a report, set the date or class filters, then generate a PDF.</div>
+          <div id="adminReportsIntro" class="message info hidden">Admin/HOD report centre — choose a report, set the filters, then generate a PDF.</div>
+
+          <div style="margin-bottom:14px">
+            <label for="reportType">Report</label>
+            <select id="reportType"></select>
+          </div>
+
+          <div id="reportFilters" class="report-filters"></div>
+          <div id="reportStudentResults" style="margin-top:10px"></div>
+          <div style="margin-top:12px"><button id="generateReport">Generate Report</button></div>
+          <div id="reportResult" style="margin-top:12px"></div>
+        </div>
+      </section>
+
+      <section id="infractionPanel" class="hidden">
+        <div class="card">
+          <h2 class="section-title">Infraction Report</h2>
+          <div class="message info show">Use this form to record a student infraction. The report is linked to your authorized class assignment.</div>
+
+          <div style="margin-bottom:14px">
+            <label>Infraction Date</label>
+            <div class="date-row">
+              <div class="date-display"><div class="date-label" id="infractionDateLabel">Today</div><div class="date-value" id="infractionDateDisplay"></div></div>
+              <button id="changeInfractionDate" class="outline change-date" type="button">Different day</button>
+            </div>
+            <div id="infractionDateEditor" class="date-editor hidden"><input id="infractionDate" type="date"></div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label for="infractionClass">Class</label>
+            <select id="infractionClass"><option value="">Choose a class</option></select>
+          </div>
+
+          <div class="summary" style="margin-bottom:14px">
+            <span>Subject: <strong id="infractionSubject">—</strong></span>
+            <span>Group: <strong id="infractionGroup">—</strong></span>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label>Period(s)</label>
+            <div id="infractionPeriodPicker" class="period-picker"></div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label for="infractionStudent">Student</label>
+            <select id="infractionStudent" disabled><option value="">Choose a class first</option></select>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label for="infractionCategory">Infraction</label>
+            <select id="infractionCategory"><option value="">Choose an infraction</option></select>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div id="infractionOtherWrap" class="hidden" style="margin-bottom:14px">
+            <label for="infractionType">Describe the other infraction</label>
+            <input id="infractionType" type="text" placeholder="Enter the infraction description">
+          </div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label for="infractionSeverity">Severity</label>
+            <select id="infractionSeverity"><option value="">Choose severity</option></select>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label for="infractionDetails">Details</label>
+            <textarea id="infractionDetails" rows="4" placeholder="What happened? Include relevant facts."></textarea>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label for="infractionAction">Action Taken</label>
+            <textarea id="infractionAction" rows="3" placeholder="What action was taken in class?"></textarea>
+          </div>
+
+          <label style="display:flex;align-items:center;gap:10px;font-weight:700;margin-bottom:14px">
+            <input id="infractionFollowUp" type="checkbox" style="width:22px;height:22px;min-height:22px">
+            Follow-up required
+          </label>
+
+          <button id="saveInfraction" type="button">Save Infraction Report</button>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">Recent Infraction Reports</h2>
+          <div id="infractionHistoryLoading" class="empty">Loading recent reports…</div>
+          <div id="infractionHistory"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+<script>
+  // ============================================================
+  // CWSS STAGE 3A — OFFLINE PWA SHELL
+  // ============================================================
+  // Change this one value after the Apps Script web-app deployment
+  // URL is known. It is saved locally after the first successful setup.
+  const CWSS_BACKEND_URL_DEFAULT = 'PASTE-YOUR-CURRENT-APPS-SCRIPT-WEB-APP-URL-HERE';
+  const CWSS_BACKEND_URL_KEY = 'cwss_pwa_backend_url';
+  const CWSS_RPC_TIMEOUT_MS = 30000;
+
+  (function installCwssOfflineBridge() {
+    const savedUrl = localStorage.getItem(CWSS_BACKEND_URL_KEY);
+    const backendUrl = savedUrl || CWSS_BACKEND_URL_DEFAULT;
+    window.CWSS_BACKEND_URL = backendUrl;
+
+    if (!backendUrl || backendUrl.indexOf('PASTE-YOUR-CURRENT') === 0) {
+      document.addEventListener('DOMContentLoaded', function() {
+        const box = document.createElement('div');
+        box.style.cssText = 'position:fixed;inset:0;background:#f4f7fb;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Arial,sans-serif';
+        box.innerHTML = '<div style="max-width:520px;background:white;padding:24px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.12)">' +
+          '<h2 style="margin-top:0">CWSS App — one-time setup</h2>' +
+          '<p>Paste the current CWSS Google Apps Script web-app link below. This is only needed once on this phone.</p>' +
+          '<input id="cwssBackendUrlInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccd5df;border-radius:10px;font-size:16px">' +
+          '<button id="cwssBackendUrlSave" style="margin-top:12px;width:100%;padding:13px;border:0;border-radius:10px;background:#163b63;color:#fff;font-size:16px;font-weight:700">Save CWSS connection</button>' +
+          '<p id="cwssBackendUrlError" style="color:#b42318;margin-bottom:0"></p>' +
+          '</div>';
+        document.body.appendChild(box);
+        document.getElementById('cwssBackendUrlSave').onclick = function() {
+          const value = document.getElementById('cwssBackendUrlInput').value.trim();
+          if (!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec(?:[?#].*)?$/.test(value)) {
+            document.getElementById('cwssBackendUrlError').textContent = 'Please paste the normal /exec web-app link from Apps Script.';
+            return;
+          }
+          localStorage.setItem(CWSS_BACKEND_URL_KEY, value);
+          location.reload();
+        };
+      });
+      return;
+    }
+
+    let frame = null;
+    let frameReady = false;
+    let queue = [];
+    let requestCounter = 0;
+    const pending = new Map();
+
+    function ensureFrame() {
+      if (frame) return;
+      frame = document.createElement('iframe');
+      frame.id = 'cwssBackendBridgeFrame';
+      frame.title = 'CWSS connection';
+      frame.setAttribute('aria-hidden', 'true');
+      frame.style.cssText = 'position:fixed;width:1px;height:1px;border:0;opacity:0;pointer-events:none;left:-10px;bottom:-10px';
+      frame.addEventListener('load', function() {
+        frameReady = true;
+        const waiting = queue;
+        queue = [];
+        waiting.forEach(sendRpc);
+      });
+      frame.src = backendUrl + (backendUrl.indexOf('?') >= 0 ? '&' : '?') + 'bridge=1';
+      document.documentElement.appendChild(frame);
+    }
+
+    function sendRpc(item) {
+      if (!frameReady || !frame || !frame.contentWindow) { queue.push(item); return; }
+      pending.set(item.requestId, item);
+      frame.contentWindow.postMessage({
+        type: 'cwss-rpc-request',
+        requestId: item.requestId,
+        method: item.method,
+        args: item.args
+      }, '*');
+      item.timeoutId = setTimeout(function() {
+        if (!pending.has(item.requestId)) return;
+        pending.delete(item.requestId);
+        item.failure && item.failure({ message: 'The CWSS server could not be reached. The phone may be offline.' });
+      }, CWSS_RPC_TIMEOUT_MS);
+    }
+
+    window.addEventListener('message', function(event) {
+      if (!event || !event.data || event.data.type !== 'cwss-rpc-response') return;
+      const item = pending.get(event.data.requestId);
+      if (!item) return;
+      pending.delete(event.data.requestId);
+      clearTimeout(item.timeoutId);
+      if (event.data.ok) {
+        item.success && item.success(event.data.result);
+      } else {
+        item.failure && item.failure({ message: event.data.error || 'CWSS server request failed.' });
+      }
+    });
+
+    function makeRunner(state) {
+      return new Proxy({}, {
+        get: function(target, property) {
+          if (property === 'withSuccessHandler') return function(fn) { state.success = fn; return makeRunner(state); };
+          if (property === 'withFailureHandler') return function(fn) { state.failure = fn; return makeRunner(state); };
+          if (property === 'withUserObject') return function(obj) { state.userObject = obj; return makeRunner(state); };
+          if (typeof property !== 'string') return undefined;
+          return function() {
+            const args = Array.prototype.slice.call(arguments);
+            const requestId = 'cwss-' + Date.now() + '-' + (++requestCounter);
+            sendRpc({
+              requestId: requestId,
+              method: property,
+              args: args,
+              success: function(result) { if (state.success) state.success(result, state.userObject); },
+              failure: function(error) { if (state.failure) state.failure(error, state.userObject); }
+            });
+          };
+        }
+      });
+    }
+
+    window.google = window.google || {};
+    window.google.script = window.google.script || {};
+    window.google.script.run = makeRunner({ success: null, failure: null, userObject: null });
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureFrame);
+    else ensureFrame();
+  })();
+</script>
+<script>
+  // ============================================================
+  // CWSS OFFLINE APP SHELL BRIDGE
+  // When this Apps Script page is loaded inside the offline PWA
+  // shell as ?bridge=1, it acts only as a secure RPC bridge.
+  // The actual UI is supplied by the cached PWA shell.
+  // ============================================================
+  const CWSS_BRIDGE_MODE = new URLSearchParams(window.location.search).get('bridge') === '1';
+
+  if (CWSS_BRIDGE_MODE) {
+    window.addEventListener('message', function(event) {
+      const message = event && event.data;
+      if (!message || message.type !== 'cwss-rpc-request' || !message.requestId || !message.method) return;
+
+      const parentOrigin = event.origin || '*';
+      try {
+        const runner = google.script.run
+          .withSuccessHandler(function(result) {
+            event.source.postMessage({
+              type: 'cwss-rpc-response',
+              requestId: message.requestId,
+              ok: true,
+              result: result
+            }, parentOrigin);
+          })
+          .withFailureHandler(function(error) {
+            event.source.postMessage({
+              type: 'cwss-rpc-response',
+              requestId: message.requestId,
+              ok: false,
+              error: error && error.message ? error.message : String(error)
+            }, parentOrigin);
+          });
+
+        if (typeof runner[message.method] !== 'function') {
+          throw new Error('CWSS bridge: server function not available: ' + message.method);
+        }
+
+        runner[message.method].apply(runner, Array.isArray(message.args) ? message.args : []);
+      } catch (error) {
+        event.source.postMessage({
+          type: 'cwss-rpc-response',
+          requestId: message.requestId,
+          ok: false,
+          error: error && error.message ? error.message : String(error)
+        }, parentOrigin);
+      }
+    });
+  }
+
+  let appData = null;
+  let students = [];
+  let selectedAssignment = null;
+  let selectedDate = '';
+  let existingAttendance = false;
+  let historyItems = [];
+  let selectedPeriods = [];
+  let selectedPeriod = ''; // compatibility/display value for the current selection
+  let selectedStudentFilters = null;
+  let infractionStudents = [];
+  let infractionPeriods = [];
+  let infractionAssignments = [];
+  let infractionDate = '';
+
+  const $ = id => document.getElementById(id);
+
+  // ============================================================
+  // OFFLINE FOUNDATION + STAGE 2 OFFLINE ATTENDANCE
+  // Stage 1: cache the last successful teacher portal data locally.
+  // Stage 2: attendance can be saved on this phone while offline and
+  // is automatically sent to Google Sheets when the connection returns.
+  // ============================================================
+  const OFFLINE_CACHE_PREFIX = 'cwss_teacher_portal_';
+  const OFFLINE_ATTENDANCE_QUEUE_PREFIX = 'cwss_teacher_offline_attendance_';
+  let usingCachedAppData = false;
+  let syncingOfflineAttendance = false;
+
+  function cacheKey(kind, email) {
+    const safeEmail = String(email || 'unknown').toLowerCase().trim().replace(/[^a-z0-9._@-]/g, '_');
+    return OFFLINE_CACHE_PREFIX + CONFIG_LABEL_SAFE() + '_' + kind + '_' + safeEmail;
+  }
+
+  function CONFIG_LABEL_SAFE() {
+    return (appData && appData.academicYear ? appData.academicYear : '2026-2027').replace(/[^a-z0-9-]/gi, '_');
+  }
+
+  function safeCacheSet(key, value) {
+    try { localStorage.setItem(key, JSON.stringify({ savedAt: new Date().toISOString(), value: value })); return true; }
+    catch (e) { console.warn('CWSS cache write failed:', e); return false; }
+  }
+
+  function safeCacheGet(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && parsed.value !== undefined ? parsed.value : null;
+    } catch (e) { console.warn('CWSS cache read failed:', e); return null; }
+  }
+
+  function getLastCachedAppData() {
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.indexOf(OFFLINE_CACHE_PREFIX) === 0 && key.indexOf('_appData_') !== -1) keys.push(key);
+      }
+      if (!keys.length) return null;
+      keys.sort();
+      return safeCacheGet(keys[keys.length - 1]);
+    } catch (e) { return null; }
+  }
+
+  function cacheAppData(data) {
+    if (!data || !data.profile || !data.profile.email) return;
+    safeCacheSet(cacheKey('appData', data.profile.email), data);
+  }
+
+  function cacheStudentsForSelection(studentsToCache) {
+    if (!appData || !appData.profile || !selectedAssignment || !studentsToCache) return;
+    const key = [selectedAssignment.subject, selectedAssignment.className, selectedAssignment.group || 'ALL'].join('|');
+    safeCacheSet(cacheKey('students_' + key, appData.profile.email), studentsToCache);
+  }
+
+  function getCachedStudentsForSelection() {
+    if (!appData || !appData.profile || !selectedAssignment) return null;
+    const key = [selectedAssignment.subject, selectedAssignment.className, selectedAssignment.group || 'ALL'].join('|');
+    return safeCacheGet(cacheKey('students_' + key, appData.profile.email));
+  }
+
+  function cacheExistingAttendanceForSelection(result) {
+    if (!appData || !appData.profile || !selectedAssignment) return;
+    const key = [selectedAssignment.subject, selectedAssignment.className, selectedAssignment.group || 'ALL', selectedDate, selectedPeriod].join('|');
+    safeCacheSet(cacheKey('attendance_' + key, appData.profile.email), result || { exists: false, records: {} });
+  }
+
+  function getCachedExistingAttendanceForSelection() {
+    if (!appData || !appData.profile || !selectedAssignment) return null;
+    const key = [selectedAssignment.subject, selectedAssignment.className, selectedAssignment.group || 'ALL', selectedDate, selectedPeriod].join('|');
+    return safeCacheGet(cacheKey('attendance_' + key, appData.profile.email));
+  }
+
+  function offlineAttendanceQueueKey() {
+    if (!appData || !appData.profile || !appData.profile.email) return null;
+    const safeEmail = String(appData.profile.email).toLowerCase().trim().replace(/[^a-z0-9._@-]/g, '_');
+    return OFFLINE_ATTENDANCE_QUEUE_PREFIX + CONFIG_LABEL_SAFE() + '_' + safeEmail;
+  }
+
+  function getOfflineAttendanceQueue() {
+    const key = offlineAttendanceQueueKey();
+    if (!key) return [];
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('CWSS offline attendance queue read failed:', e);
+      return [];
+    }
+  }
+
+  function saveOfflineAttendanceQueue(queue) {
+    const key = offlineAttendanceQueueKey();
+    if (!key) return false;
+    try {
+      localStorage.setItem(key, JSON.stringify(queue));
+      return true;
+    } catch (e) {
+      console.warn('CWSS offline attendance queue write failed:', e);
+      return false;
+    }
+  }
+
+  function makeOfflineAttendanceQueueId(payload) {
+    const raw = [
+      payload.attendanceDate || '',
+      payload.subject || '',
+      payload.className || '',
+      payload.group || 'ALL',
+      payload.period || ''
+    ].join('|').toUpperCase();
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++) hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
+    return 'attendance_' + Math.abs(hash) + '_' + raw.length;
+  }
+
+  function attendanceRecordsFromStudents(payloadStudents) {
+    return (payloadStudents || []).reduce((m, s) => {
+      m[String(s.studentName || '').toUpperCase()] = { status: s.status, comment: s.comment };
+      return m;
+    }, {});
+  }
+
+  function getPendingOfflineAttendanceForSelection() {
+    if (!selectedAssignment) return null;
+    const target = {
+      attendanceDate: selectedDate,
+      subject: selectedAssignment.subject,
+      className: selectedAssignment.className,
+      group: selectedAssignment.group || 'ALL',
+      period: selectedPeriod
+    };
+    const queue = getOfflineAttendanceQueue();
+    return queue.find(item => item && item.payload &&
+      String(item.payload.attendanceDate || '') === String(target.attendanceDate || '') &&
+      String(item.payload.subject || '').toUpperCase() === String(target.subject || '').toUpperCase() &&
+      String(item.payload.className || '').toUpperCase() === String(target.className || '').toUpperCase() &&
+      String(item.payload.group || 'ALL').toUpperCase() === String(target.group || 'ALL').toUpperCase() &&
+      String(item.payload.period || '') === String(target.period || '')) || null;
+  }
+
+  function updatePendingAttendanceStatus() {
+    const el = $('pendingAttendanceStatus');
+    if (!el) return;
+    const count = getOfflineAttendanceQueue().length;
+    if (!count) {
+      el.textContent = '';
+      el.classList.add('hidden');
+      el.classList.remove('online-ready');
+      return;
+    }
+    el.classList.remove('hidden');
+    el.classList.remove('online-ready');
+    if (navigator.onLine) {
+      el.classList.add('online-ready');
+      el.textContent = count === 1 ? '1 offline attendance session is waiting to sync…' : count + ' offline attendance sessions are waiting to sync…';
+    } else {
+      el.textContent = count === 1 ? '1 attendance session saved on this phone — waiting for internet.' : count + ' attendance sessions saved on this phone — waiting for internet.';
+    }
+  }
+
+  function queueOfflineAttendance(payload) {
+    const queue = getOfflineAttendanceQueue();
+    const queueId = makeOfflineAttendanceQueueId(payload);
+    const now = new Date().toISOString();
+    const existingIndex = queue.findIndex(item => item && item.queueId === queueId);
+    const item = {
+      queueId: queueId,
+      createdAt: existingIndex >= 0 && queue[existingIndex].createdAt ? queue[existingIndex].createdAt : now,
+      updatedAt: now,
+      attempts: existingIndex >= 0 && Number(queue[existingIndex].attempts) ? Number(queue[existingIndex].attempts) : 0,
+      lastError: '',
+      payload: payload
+    };
+    if (existingIndex >= 0) queue[existingIndex] = item;
+    else queue.push(item);
+    return saveOfflineAttendanceQueue(queue);
+  }
+
+  function markOfflineAttendanceAttempt(queueId, errorMessage) {
+    const queue = getOfflineAttendanceQueue();
+    const index = queue.findIndex(item => item && item.queueId === queueId);
+    if (index < 0) return;
+    queue[index].attempts = Number(queue[index].attempts || 0) + 1;
+    queue[index].lastError = errorMessage || 'Unable to sync attendance.';
+    queue[index].updatedAt = new Date().toISOString();
+    saveOfflineAttendanceQueue(queue);
+  }
+
+  function removeOfflineAttendance(queueId) {
+    const queue = getOfflineAttendanceQueue().filter(item => !item || item.queueId !== queueId);
+    saveOfflineAttendanceQueue(queue);
+  }
+
+  function updateConnectivityStatus() {
+    const online = navigator.onLine;
+    const box = $('connectivityStatus');
+    const text = $('connectivityText');
+    if (!box || !text) return;
+    box.classList.toggle('online', online);
+    box.classList.toggle('offline', !online);
+    text.textContent = online ? 'Online' : 'Offline';
+    box.title = online ? 'Internet connection detected' : 'No internet connection detected';
+    updatePendingAttendanceStatus();
+  }
+
+  function showOfflineNotice(message) {
+    let notice = $('offlineNotice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'offlineNotice';
+      notice.className = 'offline-notice';
+      $('app').insertBefore(notice, $('app').firstElementChild);
+    }
+    notice.textContent = message || 'Offline mode: showing information saved on this phone.';
+    notice.classList.remove('hidden');
+  }
+
+  function hideOfflineNotice() {
+    const notice = $('offlineNotice');
+    if (notice) notice.classList.add('hidden');
+  }
+
+  function syncOfflineAttendanceQueue() {
+    if (!navigator.onLine || syncingOfflineAttendance || !appData || !appData.profile) {
+      updatePendingAttendanceStatus();
+      return;
+    }
+    const queue = getOfflineAttendanceQueue();
+    if (!queue.length) {
+      updatePendingAttendanceStatus();
+      return;
+    }
+
+    syncingOfflineAttendance = true;
+    updatePendingAttendanceStatus();
+    let synced = 0;
+    let failed = 0;
+
+    function processNext(index) {
+      const currentQueue = getOfflineAttendanceQueue();
+      if (!navigator.onLine || index >= currentQueue.length) {
+        syncingOfflineAttendance = false;
+        updatePendingAttendanceStatus();
+        if (synced > 0 && failed === 0) {
+          showSuccess(synced === 1 ? 'Offline attendance synced successfully to the school system.' : synced + ' offline attendance sessions synced successfully to the school system.');
+        } else if (synced > 0 && failed > 0) {
+          showSuccess(synced + ' offline attendance session(s) synced. ' + failed + ' session(s) remain on this phone and will be retried.');
+        } else if (failed > 0) {
+          showError('Offline attendance could not be synced yet. The saved attendance remains safely on this phone and will be retried when the connection is available.');
+        }
+        return;
+      }
+
+      const item = currentQueue[index];
+      if (!item || !item.payload) {
+        if (item && item.queueId) removeOfflineAttendance(item.queueId);
+        processNext(index);
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(result => {
+          removeOfflineAttendance(item.queueId);
+          synced++;
+          if (selectedAssignment &&
+              String(item.payload.attendanceDate || '') === String(selectedDate || '') &&
+              String(item.payload.subject || '').toUpperCase() === String(selectedAssignment.subject || '').toUpperCase() &&
+              String(item.payload.className || '').toUpperCase() === String(selectedAssignment.className || '').toUpperCase() &&
+              String(item.payload.group || 'ALL').toUpperCase() === String(selectedAssignment.group || 'ALL').toUpperCase() &&
+              String(item.payload.period || '') === String(selectedPeriod || '')) {
+            existingAttendance = true;
+            cacheExistingAttendanceForSelection({ exists: true, records: attendanceRecordsFromStudents(item.payload.students) });
+            renderStudents(attendanceRecordsFromStudents(item.payload.students));
+          }
+          processNext(index);
+        })
+        .withFailureHandler(err => {
+          const message = err && err.message ? err.message : String(err);
+          markOfflineAttendanceAttempt(item.queueId, message);
+          failed++;
+          processNext(index + 1);
+        })
+        .saveAttendance(item.payload);
+    }
+
+    processNext(0);
+  }
+
+  window.addEventListener('online', () => {
+    updateConnectivityStatus();
+    if (usingCachedAppData) {
+      showSuccess('Internet connection restored. Offline attendance is being synced automatically.');
+    }
+    syncOfflineAttendanceQueue();
+  });
+  window.addEventListener('offline', () => {
+    updateConnectivityStatus();
+    if (appData) showOfflineNotice('Offline mode: using the last information saved on this phone.');
+  });
+  updateConnectivityStatus();
+
+  function showError(message) { $('error').textContent = message || 'An error occurred.'; $('error').classList.add('show'); $('success').classList.remove('show'); }
+  function showSuccess(message) { $('success').textContent = message; $('success').classList.add('show'); $('error').classList.remove('show'); }
+  function clearMessages() { $('error').classList.remove('show'); $('success').classList.remove('show'); }
+  function formatDisplayDate(value) { if (!value) return ''; const parts = value.split('-'); return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : value; }
+
+  function applyAppData(data, fromCache) {
+    if (!data || !data.profile) throw new Error('The saved teacher portal data is incomplete.');
+    appData = data;
+    usingCachedAppData = !!fromCache;
+    selectedDate = data.today || selectedDate || '';
+    $('loading').classList.add('hidden'); $('app').classList.remove('hidden');
+    $('schoolTitle').textContent = data.schoolName || 'Couva West Secondary School';
+    $('departmentTitle').textContent = data.departmentName || 'Mathematics Information Technology Department';
+    $('teacherName').textContent = data.profile.teacherName || '';
+    $('teacherEmail').textContent = data.profile.email || '';
+    $('teacherRole').textContent = (data.profile.roles || []).join(', ');
+    $('offlineProfileNote').classList.toggle('hidden', !fromCache);
+    $('dateDisplay').textContent = formatDisplayDate(selectedDate);
+    $('attendanceDate').value = selectedDate;
+    infractionDate = data.today || selectedDate;
+    $('infractionDateDisplay').textContent = formatDisplayDate(infractionDate);
+    $('infractionDate').value = infractionDate;
+    populateClasses(); populatePeriods(); setupHistoryControls();
+    if (fromCache) showOfflineNotice('Offline mode: using the last teacher information saved on this phone.');
+    else hideOfflineNotice();
+    updatePendingAttendanceStatus();
+    if (!fromCache) syncOfflineAttendanceQueue();
+  }
+
+  function loadApp() {
+    updateConnectivityStatus();
+    if (!navigator.onLine) {
+      const cached = getLastCachedAppData();
+      if (cached) {
+        try { applyAppData(cached, true); return; }
+        catch (e) { /* fall through to the normal error message */ }
+      }
+      $('loading').classList.add('hidden');
+      showError('You are offline and this phone does not yet have saved CWSS Teacher Portal information. Connect to the internet once, then reopen the portal.');
+      return;
+    }
+
+    google.script.run.withSuccessHandler(data => {
+      cacheAppData(data);
+      applyAppData(data, false);
+    }).withFailureHandler(err => {
+      const cached = getLastCachedAppData();
+      if (cached) {
+        try { applyAppData(cached, true); return; } catch (e) {}
+      }
+      $('loading').classList.add('hidden');
+      showError(err && err.message ? err.message : String(err));
+    }).getAppData();
+  }
+
+  function populateClasses() {
+    const assignments = appData.assignments || [], picker = $('classPicker');
+    if (!assignments.length) { picker.innerHTML = '<div class="empty">No classes are currently assigned to you.</div>'; return; }
+    picker.innerHTML = assignments.map((a, i) => {
+      const groupText = a.group && a.group.toUpperCase() !== 'ALL' ? ' • Group ' + a.group : ' • All groups';
+      return `<button type="button" class="assignment-button" data-index="${i}"><div class="assignment-main">${escapeHtml(a.className)}</div><div class="assignment-sub">${escapeHtml(a.subject)}${escapeHtml(groupText)}</div></button>`;
+    }).join('');
+    picker.querySelectorAll('.assignment-button').forEach(b => b.addEventListener('click', () => selectAssignment(Number(b.dataset.index))));
+    if (assignments.length === 1) selectAssignment(0); else $('subjectValue').textContent = 'Choose a class';
+  }
+
+  function selectAssignment(index) {
+    clearMessages(); selectedAssignment = appData.assignments[index]; if (!selectedAssignment) return;
+    document.querySelectorAll('.assignment-button').forEach((b, i) => b.classList.toggle('selected', i === index));
+    $('subjectValue').textContent = selectedAssignment.subject; $('selectedClass').textContent = 'Class: ' + selectedAssignment.className; $('selectedGroup').textContent = 'Group: ' + (selectedAssignment.group || 'ALL');
+    $('selectionSummary').classList.remove('hidden');
+    selectedPeriods = []; selectedPeriod = '';
+    document.querySelectorAll('.period-button').forEach(b => b.classList.remove('selected'));
+    $('loadStudents').disabled = true; $('loadStudents').textContent = 'Select period(s)';
+  }
+
+  function populatePeriods() {
+    const picker = $('periodPicker');
+    picker.innerHTML = [1,2,3,4,5,6].map(n => `<button type="button" class="period-button" data-period="${n}">Period ${n}</button>`).join('');
+    picker.querySelectorAll('.period-button').forEach(b => b.addEventListener('click', () => {
+      const n = Number(b.dataset.period);
+      if (selectedPeriods.includes(n)) {
+        selectedPeriods = selectedPeriods.filter(x => x !== n);
+      } else {
+        selectedPeriods.push(n);
+      }
+      selectedPeriods.sort((a,b) => a-b);
+      selectedPeriod = formatPeriodSelection(selectedPeriods);
+      picker.querySelectorAll('.period-button').forEach(x => x.classList.toggle('selected', selectedPeriods.includes(Number(x.dataset.period))));
+      if (selectedAssignment && selectedPeriods.length) { $('loadStudents').disabled = false; $('loadStudents').textContent = 'Load Students'; }
+      else { $('loadStudents').disabled = true; $('loadStudents').textContent = 'Select period(s)'; }
+    }));
+  }
+
+  function formatPeriodSelection(periods) {
+    if (!periods.length) return '';
+    const ranges = []; let start = periods[0], prev = periods[0];
+    for (let i=1;i<periods.length;i++) {
+      if (periods[i] === prev + 1) { prev = periods[i]; continue; }
+      ranges.push(start === prev ? String(start) : start + '-' + prev);
+      start = prev = periods[i];
+    }
+    ranges.push(start === prev ? String(start) : start + '-' + prev);
+    return ranges.join(',');
+  }
+
+  function toggleDateEditor() {
+    $('dateEditor').classList.toggle('hidden');
+    const open = !$('dateEditor').classList.contains('hidden');
+    $('changeDate').textContent = open ? 'Use today' : 'Different day';
+    $('dateLabel').textContent = open ? 'Selected day' : 'Today';
+    if (!open) { selectedDate = appData.today; $('attendanceDate').value = selectedDate; $('dateDisplay').textContent = formatDisplayDate(selectedDate); if (selectedAssignment) loadStudents(); }
+  }
+
+  function dateChanged() { selectedDate = $('attendanceDate').value || appData.today; $('dateDisplay').textContent = formatDisplayDate(selectedDate); $('dateLabel').textContent = selectedDate === appData.today ? 'Today' : 'Selected day'; clearMessages(); if (selectedAssignment) loadStudents(); }
+
+  function switchTab(tab) {
+    const attendance = tab === 'attendance';
+    const history = tab === 'history';
+    const infraction = tab === 'infraction';
+    const reports = tab === 'reports';
+    $('attendancePanel').classList.toggle('hidden', !attendance);
+    $('historyPanel').classList.toggle('hidden', !history);
+    $('infractionPanel').classList.toggle('hidden', !infraction);
+    $('reportsPanel').classList.toggle('hidden', !reports);
+    $('attendanceTab').classList.toggle('active', attendance);
+    $('historyTab').classList.toggle('active', history);
+    $('infractionTab').classList.toggle('active', infraction);
+    $('reportsTab').classList.toggle('active', reports);
+    clearMessages();
+    if (history) loadReportOptionsAndHistory();
+    if (infraction) loadInfractionTab();
+    if (reports) loadReportsTab();
+  }
+
+  function setupHistoryControls() {
+    $('attendanceTab').addEventListener('click', () => switchTab('attendance'));
+    $('historyTab').addEventListener('click', () => switchTab('history'));
+    $('infractionTab').addEventListener('click', () => switchTab('infraction'));
+    $('infractionClass').addEventListener('change', loadInfractionStudents);
+    $('infractionCategory').addEventListener('change', toggleOtherInfraction);
+    $('saveInfraction').addEventListener('click', saveInfractionReport);
+    $('changeInfractionDate').addEventListener('click', toggleInfractionDateEditor);
+    $('infractionDate').addEventListener('change', changeInfractionDate);
+    $('refreshHistory').addEventListener('click', loadHistoryWithFilters);
+    $('historySubject').addEventListener('change', loadHistoryWithFilters);
+    $('historyClass').addEventListener('change', loadHistoryWithFilters);
+    $('historyGroup').addEventListener('change', loadHistoryWithFilters);
+    $('historyPeriod').addEventListener('change', loadHistoryWithFilters);
+    $('teacherFilter').addEventListener('change', loadHistoryWithFilters);
+    $('historyFrom').addEventListener('change', loadHistoryWithFilters);
+    $('historyTo').addEventListener('change', loadHistoryWithFilters);
+    $('reportsTab').addEventListener('click', () => switchTab('reports'));
+    $('reportType').addEventListener('change', renderReportFilters);
+    $('generateReport').addEventListener('click', generateSelectedReport);
+  }
+
+  function loadInfractionTab() {
+    google.script.run.withSuccessHandler(options => {
+      infractionAssignments = options.assignments || appData.assignments || [];
+      fillSelect('infractionClass', infractionAssignments.map(a => a.className + '|' + a.subject + '|' + (a.group || 'ALL')), 'Choose a class');
+      // restore readable class labels
+      const select = $('infractionClass');
+      select.innerHTML = '<option value="">Choose a class</option>' + infractionAssignments.map((a,i) => `<option value="${i}">${escapeHtml(a.className)} — ${escapeHtml(a.subject)}${a.group && String(a.group).toUpperCase() !== 'ALL' ? ' • Group ' + escapeHtml(a.group) : ' • All groups'}</option>`).join('');
+      const infractions = options.infractions || [];
+      $('infractionCategory').innerHTML = '<option value="">Choose an infraction</option>' + infractions.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      const sev = options.severities || [];
+      $('infractionSeverity').innerHTML = '<option value="">Choose severity</option>' + sev.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      renderInfractionPeriods();
+      loadInfractionHistory();
+    }).withFailureHandler(err => showError(err && err.message ? err.message : String(err))).getInfractionReportOptions();
+  }
+
+  function toggleOtherInfraction() {
+    const isOther = $('infractionCategory').value === 'Other (open option for description)';
+    $('infractionOtherWrap').classList.toggle('hidden', !isOther);
+    if (!isOther) $('infractionType').value = '';
+  }
+
+  function renderInfractionPeriods() {
+    $('infractionPeriodPicker').innerHTML = [1,2,3,4,5,6].map(n => `<button type="button" class="period-button ${infractionPeriods.includes(n) ? 'selected' : ''}" data-period="${n}">Period ${n}</button>`).join('');
+    $('infractionPeriodPicker').querySelectorAll('.period-button').forEach(b => b.addEventListener('click', () => {
+      const n = Number(b.dataset.period);
+      infractionPeriods = infractionPeriods.includes(n) ? infractionPeriods.filter(x => x !== n) : infractionPeriods.concat(n);
+      infractionPeriods.sort((a,b)=>a-b); renderInfractionPeriods();
+    }));
+  }
+
+  function loadInfractionStudents() {
+    const i = $('infractionClass').value;
+    if (i === '') { $('infractionStudent').innerHTML = '<option value="">Choose a class first</option>'; $('infractionStudent').disabled = true; $('infractionSubject').textContent='—'; $('infractionGroup').textContent='—'; return; }
+    const a = infractionAssignments[Number(i)];
+    $('infractionSubject').textContent = a.subject || '—'; $('infractionGroup').textContent = a.group || 'ALL';
+    $('infractionStudent').disabled = true; $('infractionStudent').innerHTML = '<option value="">Loading students…</option>';
+    google.script.run.withSuccessHandler(result => {
+      infractionStudents = result || [];
+      $('infractionStudent').innerHTML = '<option value="">Choose a student</option>' + infractionStudents.map(s => `<option value="${escapeHtml(s.studentName)}">${escapeHtml(s.studentName)}</option>`).join('');
+      $('infractionStudent').disabled = false;
+    }).withFailureHandler(err => { $('infractionStudent').innerHTML = '<option value="">Unable to load students</option>'; showError(err && err.message ? err.message : String(err)); }).getStudents(a.subject, a.className, a.group || 'ALL');
+  }
+
+  function toggleInfractionDateEditor() {
+    $('infractionDateEditor').classList.toggle('hidden');
+    const open = !$('infractionDateEditor').classList.contains('hidden');
+    $('changeInfractionDate').textContent = open ? 'Use today' : 'Different day';
+    $('infractionDateLabel').textContent = open ? 'Selected day' : 'Today';
+    if (!open) { infractionDate = appData.today; $('infractionDate').value = infractionDate; $('infractionDateDisplay').textContent = formatDisplayDate(infractionDate); }
+  }
+
+  function changeInfractionDate() {
+    infractionDate = $('infractionDate').value || appData.today;
+    $('infractionDateDisplay').textContent = formatDisplayDate(infractionDate);
+    $('infractionDateLabel').textContent = infractionDate === appData.today ? 'Today' : 'Selected day';
+  }
+
+  function saveInfractionReport() {
+    clearMessages();
+    const i = $('infractionClass').value;
+    if (i === '') { showError('Please select a class.'); return; }
+    if (!infractionPeriods.length) { showError('Please select at least one period.'); return; }
+    if (!$('infractionStudent').value) { showError('Please select a student.'); return; }
+    if (!$('infractionCategory').value) { showError('Please select an infraction.'); return; }
+    if ($('infractionCategory').value === 'Other (open option for description)' && !$('infractionType').value.trim()) { showError('Please describe the other infraction.'); return; }
+    const assignment = infractionAssignments[Number(i)];
+    const payload = {
+      infractionDate: infractionDate,
+      period: formatPeriodSelection(infractionPeriods),
+      periods: infractionPeriods,
+      subject: assignment.subject,
+      className: assignment.className,
+      group: assignment.group || 'ALL',
+      studentName: $('infractionStudent').value,
+      category: $('infractionCategory').value,
+      infraction: $('infractionType').value.trim(),
+      severity: $('infractionSeverity').value,
+      details: $('infractionDetails').value.trim(),
+      actionTaken: $('infractionAction').value.trim(),
+      followUpRequired: $('infractionFollowUp').checked
+    };
+    $('saveInfraction').disabled = true; $('saveInfraction').textContent = 'Saving…';
+    google.script.run.withSuccessHandler(result => {
+      $('saveInfraction').disabled = false; $('saveInfraction').textContent = 'Save Infraction Report';
+      showSuccess(result.message);
+      $('infractionType').value=''; $('infractionDetails').value=''; $('infractionAction').value=''; $('infractionCategory').value=''; $('infractionSeverity').value=''; $('infractionFollowUp').checked=false; toggleOtherInfraction();
+      loadInfractionHistory();
+    }).withFailureHandler(err => { $('saveInfraction').disabled = false; $('saveInfraction').textContent = 'Save Infraction Report'; showError(err && err.message ? err.message : String(err)); }).saveInfraction(payload);
+  }
+
+  function loadInfractionHistory() {
+    $('infractionHistoryLoading').textContent = 'Loading recent reports…'; $('infractionHistoryLoading').classList.remove('hidden'); $('infractionHistory').innerHTML='';
+    google.script.run.withSuccessHandler(items => {
+      if (!items || !items.length) { $('infractionHistoryLoading').textContent='No infraction reports found.'; return; }
+      $('infractionHistoryLoading').classList.add('hidden');
+      $('infractionHistory').innerHTML = items.slice(0,20).map(item => `<div class="history-item" style="cursor:default"><div class="history-main">${escapeHtml(item.studentName)} — ${escapeHtml(item.displayDate)}</div><div class="history-sub">${escapeHtml(item.className)} • ${escapeHtml(item.subject)} • ${escapeHtml(item.group)} • Periods ${escapeHtml(periodLabel(item.period))}${appData.profile.isAdmin ? ' • ' + escapeHtml(item.teacherName) : ''}</div><div class="history-counts"><span>${escapeHtml(item.category)}</span><span>${escapeHtml(item.severity)}</span><span>${escapeHtml(item.status)}</span>${item.followUpRequired ? '<span>Follow-up required</span>' : ''}</div><div class="history-sub" style="margin-top:6px">${escapeHtml(item.infraction)}</div></div>`).join('');
+    }).withFailureHandler(err => { $('infractionHistoryLoading').textContent='Infraction history could not be loaded.'; showError(err && err.message ? err.message : String(err)); }).getInfractionHistory({});
+  }
+
+  function loadReportOptionsAndHistory() {
+    google.script.run.withSuccessHandler(options => {
+      fillSelect('teacherFilter', options.teachers || [], 'All teachers');
+      fillSelect('historySubject', options.subjects || [], 'All subjects');
+      fillSelect('historyClass', options.classes || [], 'All classes');
+      fillSelect('historyGroup', options.groups || [], 'All groups');
+      fillSelect('historyPeriod', options.periods || [], 'All periods');
+      if (appData.profile.isAdmin) { $('historyMode').classList.remove('hidden'); $('teacherFilterWrap').classList.remove('hidden'); }
+      else { $('historyMode').classList.add('hidden'); $('teacherFilterWrap').classList.add('hidden'); }
+      loadHistoryWithFilters();
+    }).withFailureHandler(err => showError(err && err.message ? err.message : String(err))).getAttendanceReportOptions();
+  }
+
+  function fillSelect(id, values, firstLabel) {
+    const el = $(id), current = el.value;
+    el.innerHTML = `<option value="">${escapeHtml(firstLabel)}</option>` + values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    if (values.indexOf(current) >= 0) el.value = current;
+  }
+
+  function loadHistoryWithFilters() {
+    $('historyLoading').textContent = 'Loading attendance history…'; $('historyLoading').classList.remove('hidden'); $('history').innerHTML = '';
+    const filters = { teacherName: $('teacherFilter').value, subject: $('historySubject').value, className: $('historyClass').value, group: $('historyGroup').value, period: $('historyPeriod').value, fromDate: $('historyFrom').value, toDate: $('historyTo').value };
+    google.script.run.withSuccessHandler(items => renderAttendanceHistory(items || [])).withFailureHandler(err => { $('historyLoading').textContent = 'Attendance history could not be loaded.'; showError(err && err.message ? err.message : String(err)); }).getAttendanceReports(filters);
+    google.script.run.withSuccessHandler(report => renderReportSummary(report || {})).withFailureHandler(err => { showError(err && err.message ? err.message : String(err)); }).getAttendanceReportSummary(filters);
+  }
+
+  function renderReportSummary(report) {
+    $('reportSessions').textContent = report.sessions || 0;
+    $('reportTotal').textContent = report.total || 0;
+    $('reportPresent').textContent = report.present || 0;
+    $('reportAbsent').textContent = report.absent || 0;
+    $('reportLate').textContent = report.late || 0;
+    $('reportExcused').textContent = report.excused || 0;
+    $('reportRate').textContent = (report.attendanceRate || 0) + '%';
+  }
+
+  function renderAttendanceHistory(items) {
+    historyItems = items;
+    if (!items.length) { $('historyLoading').textContent = 'No attendance records match the selected filters.'; return; }
+    $('historyLoading').classList.add('hidden');
+    $('history').innerHTML = items.map((item, index) => `
+      <button type="button" class="history-item" data-history-index="${index}">
+        <div class="history-main">${escapeHtml(item.className)} — ${escapeHtml(item.displayDate)} • Periods ${escapeHtml(periodLabel(item.period))}</div>
+        <div class="history-sub">${escapeHtml(item.subject)} • ${escapeHtml(item.group || 'ALL')}${appData.profile.isAdmin ? ' • ' + escapeHtml(item.teacherName) : ''}</div>
+        <div class="history-counts"><span>Total ${item.total}</span><span>Present ${item.present}</span><span>Absent ${item.absent}</span><span>Late ${item.late}</span><span>Excused ${item.excused}</span></div>
+      </button>`).join('');
+    document.querySelectorAll('.history-item').forEach(b => b.addEventListener('click', () => openHistoryItem(historyItems[Number(b.dataset.historyIndex)])));
+  }
+
+  function openHistoryItem(item) {
+    if (!item) return;
+    if (appData.profile.isAdmin && item.teacherEmail !== appData.profile.email) {
+      showError('This report belongs to another teacher. Admins can review department attendance here, but updates must be made by the teacher assigned to that class.');
+      return;
+    }
+    const assignment = appData.assignments.find(a => String(a.subject).toUpperCase() === String(item.subject).toUpperCase() && String(a.className).toUpperCase() === String(item.className).toUpperCase() && (String(a.group || 'ALL').toUpperCase() === String(item.group || 'ALL').toUpperCase() || String(a.group || 'ALL').toUpperCase() === 'ALL'));
+    if (!assignment) { showError('You no longer have access to that class assignment.'); return; }
+    const index = appData.assignments.indexOf(assignment);
+    selectedDate = item.attendanceDate; $('attendanceDate').value = selectedDate;
+    selectAssignment(index);
+    selectedPeriods = parsePeriodSelection(item.period);
+    selectedPeriod = formatPeriodSelection(selectedPeriods);
+    document.querySelectorAll('.period-button').forEach(b => b.classList.toggle('selected', selectedPeriods.includes(Number(b.dataset.period))));
+    $('loadStudents').disabled = !selectedPeriods.length; $('loadStudents').textContent = selectedPeriods.length ? 'Load Students' : 'Select period(s)';
+    $('dateDisplay').textContent = formatDisplayDate(selectedDate); $('dateLabel').textContent = selectedDate === appData.today ? 'Today' : 'Selected day';
+    switchTab('attendance'); window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function searchStudentAttendance() {
+    clearMessages();
+    const search = $('studentSearch').value.trim();
+    if (!search) { showError('Please type part of a student’s name.'); return; }
+    const filters = selectedStudentFilters || { teacherName: $('teacherFilter').value, subject: $('historySubject').value, className: $('historyClass').value, group: $('historyGroup').value, period: $('historyPeriod').value, fromDate: $('historyFrom').value, toDate: $('historyTo').value };
+    filters.search = search;
+    $('studentSearchResults').innerHTML = '<div class="empty">Searching…</div>';
+    $('studentReport').innerHTML = '';
+    google.script.run.withSuccessHandler(results => renderStudentSearchResults(results || [], filters)).withFailureHandler(err => { showError(err && err.message ? err.message : String(err)); $('studentSearchResults').innerHTML = ''; }).getStudentAttendanceSearch(filters);
+  }
+
+  function renderStudentSearchResults(results, filters) {
+    if (!results.length) { $('studentSearchResults').innerHTML = '<div class="empty">No matching students found.</div>'; return; }
+    $('studentSearchResults').innerHTML = results.map((s, i) => `<button type="button" class="history-item" data-student-index="${i}"><div class="history-main">${escapeHtml(s.studentName)}</div><div class="history-sub">Total ${s.total} • Present ${s.present} • Absent ${s.absent} • Late ${s.late} • Excused ${s.excused} • Attendance ${s.total ? Math.round(((s.present + s.late) / s.total) * 1000) / 10 : 0}%</div></button>`).join('');
+    document.querySelectorAll('[data-student-index]').forEach(b => b.addEventListener('click', () => openStudentDetail(results[Number(b.dataset.studentIndex)].studentName, filters)));
+  }
+
+  function openStudentDetail(studentName, filters) {
+    $('studentReportLoading').textContent = 'Loading ' + studentName + '…';
+    $('studentReportLoading').classList.remove('hidden');
+    $('studentReport').innerHTML = '';
+    google.script.run.withSuccessHandler(report => {
+      if (!report) { $('studentReportLoading').textContent = 'No student report found.'; return; }
+      $('studentReportLoading').classList.add('hidden');
+      const a = report.attendance || {};
+      const rate = a.rate || 0;
+      const classes = (report.classes || []).map(c => `${escapeHtml(c.className)} • ${escapeHtml(c.subject)} • ${escapeHtml(c.group)}`).join('<br>') || '—';
+      const attendanceRows = (a.records || []).map(r => `
+        <div class="history-item" style="cursor:default">
+          <div class="history-main">${escapeHtml(r.displayDate)} • ${escapeHtml(periodLabel(r.period))} • ${escapeHtml(r.status)}</div>
+          <div class="history-sub">${escapeHtml(r.className)} • ${escapeHtml(r.subject)} • ${escapeHtml(r.group)}${r.comment ? ' • ' + escapeHtml(r.comment) : ''}</div>
+        </div>`).join('') || '<div class="empty">No attendance records found.</div>';
+      const infractionRows = (report.infractions || []).map(r => `
+        <div class="history-item" style="cursor:default">
+          <div class="history-main">${escapeHtml(r.displayDate)} • ${escapeHtml(r.category)} • ${escapeHtml(r.severity || '—')}</div>
+          <div class="history-sub">${escapeHtml(r.className)} • ${escapeHtml(r.subject)} • ${escapeHtml(r.group)} • ${escapeHtml(periodLabel(r.period))}</div>
+          ${r.infraction ? `<div class="history-sub" style="margin-top:5px"><strong>Other description:</strong> ${escapeHtml(r.infraction)}</div>` : ''}
+          ${r.details ? `<div class="history-sub" style="margin-top:5px"><strong>Details:</strong> ${escapeHtml(r.details)}</div>` : ''}
+          ${r.actionTaken ? `<div class="history-sub" style="margin-top:5px"><strong>Action:</strong> ${escapeHtml(r.actionTaken)}</div>` : ''}
+          ${r.followUpRequired ? '<div class="history-counts"><span>Follow-up required</span></div>' : ''}
+        </div>`).join('') || '<div class="empty">No infraction records found.</div>';
+
+      $('studentReport').innerHTML = `
+        <div id="printableStudentReport" class="student-report">
+          <div class="student-report-header">
+            <div><strong>Student:</strong> ${escapeHtml(report.studentName)}</div>
+            <div><strong>Scope:</strong> ${escapeHtml(report.teacherScope)}</div>
+            <div><strong>Classes:</strong><br>${classes}</div>
+          </div>
+          <div class="summary attendance-summary">
+            <span>Total: <strong>${a.total || 0}</strong></span>
+            <span>Present: <strong>${a.present || 0}</strong></span>
+            <span>Absent: <strong>${a.absent || 0}</strong></span>
+            <span>Late: <strong>${a.late || 0}</strong></span>
+            <span>Excused: <strong>${a.excused || 0}</strong></span>
+            <span>Attendance: <strong>${rate}%</strong></span>
+          </div>
+          <h3 class="report-subtitle">Attendance History</h3>
+          ${attendanceRows}
+          <h3 class="report-subtitle">Infraction History (${(report.infractions || []).length})</h3>
+          ${infractionRows}
+        </div>
+        <button type="button" id="printStudentReport" class="outline" style="margin-top:12px">Print / Save Student Report</button>`;
+
+      $('studentReportLoading').textContent = report.studentName + ' — Attendance ' + rate + '%';
+      $('printStudentReport').addEventListener('click', () => printStudentReport(report));
+    }).withFailureHandler(err => {
+      showError(err && err.message ? err.message : String(err));
+      $('studentReportLoading').textContent = 'Student report could not be loaded.';
+    }).getStudentManagementReport(studentName, filters);
+  }
+
+  function printStudentReport(report) {
+    const a = report.attendance || {};
+    const rate = a.rate || 0;
+    const esc = escapeHtml;
+    const attendanceRows = (a.records || []).map(r => `<tr><td>${esc(r.displayDate)}</td><td>${esc(periodLabel(r.period))}</td><td>${esc(r.className)}</td><td>${esc(r.subject)}</td><td>${esc(r.group)}</td><td>${esc(r.status)}</td><td>${esc(r.comment || '')}</td></tr>`).join('');
+    const infractionRows = (report.infractions || []).map(r => `<tr><td>${esc(r.displayDate)}</td><td>${esc(r.className)}</td><td>${esc(periodLabel(r.period))}</td><td>${esc(r.category)}</td><td>${esc(r.severity || '')}</td><td>${esc(r.details || r.infraction || '')}</td><td>${esc(r.actionTaken || '')}</td><td>${r.followUpRequired ? 'Yes' : 'No'}</td></tr>`).join('');
+    const win = window.open('', '_blank');
+    if (!win) { showError('Please allow pop-ups for this site to print the student report.'); return; }
+    win.document.write(`<!doctype html><html><head><title>${esc(report.studentName)} — Student Summary</title><style>body{font-family:Arial,sans-serif;margin:34px;color:#17212b} .report-head{text-align:center;margin-bottom:20px;border-bottom:2px solid #17365d;padding-bottom:12px} .school{font-size:18px;font-weight:700;color:#17365d} .dept{font-size:15px;font-weight:700;margin-top:3px;color:#394b5a} .report-name{font-size:16px;font-weight:700;margin-top:10px;text-transform:uppercase;letter-spacing:.2px} .student-meta{margin:14px 0 16px;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:13px} h2{color:#17365d;border-bottom:1px solid #cbd2d9;padding-bottom:4px;margin-top:22px} table{width:100%;border-collapse:collapse;margin:10px 0 22px} th,td{border:1px solid #cbd2d9;padding:7px;font-size:11px;text-align:left;vertical-align:top} th{background:#eef2f6} .summary{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:10px 0 20px}.pill{padding:8px 6px;background:#f1f4f7;text-align:center;border:1px solid #d7dde3;font-weight:700;font-size:11px}.note{font-size:12px;color:#53616d}.print-btn{margin-top:20px;padding:10px 16px}@media print{button{display:none}.student-meta{grid-template-columns:1fr 1fr}}</style></head><body><div class="report-head"><div class="school">Couva West Secondary School</div><div class="dept">Mathematics Information Technology Department</div><div class="report-name">Student Attendance &amp; Infraction Summary</div></div><div class="student-meta"><div><strong>Student:</strong> ${esc(report.studentName)}</div><div><strong>Reporting Period:</strong> ${esc(report.reportingPeriod || 'All available dates')}</div><div><strong>Class/Group:</strong> ${(report.classes || []).map(c => esc(c.className)+' • '+esc(c.group || 'ALL')).join(', ') || '—'}</div><div><strong>Subject:</strong> ${(report.classes || []).map(c => esc(c.subject)).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ') || '—'}</div></div><div class="summary"><div class="pill">Total<br>${a.total||0}</div><div class="pill">Present<br>${a.present||0}</div><div class="pill">Absent<br>${a.absent||0}</div><div class="pill">Late<br>${a.late||0}</div><div class="pill">Excused<br>${a.excused||0}</div><div class="pill">Attendance<br>${rate}%</div></div><h2>Attendance</h2>${attendanceRows ? `<table><thead><tr><th>Date</th><th>Period(s)</th><th>Class</th><th>Status</th><th>Comment</th></tr></thead><tbody>${attendanceRows}</tbody></table>` : '<p class="note">No attendance records found.</p>'}<h2>Infractions</h2>${infractionRows ? `<table><thead><tr><th>Date</th><th>Class</th><th>Period(s)</th><th>Infraction</th><th>Severity</th><th>Details</th><th>Action Taken</th><th>Follow-up</th></tr></thead><tbody>${infractionRows}</tbody></table>` : '<p class="note">No infraction records found.</p>'}<button class="print-btn" onclick="window.print()">Print / Save as PDF</button></body></html>`);
+    win.document.close();
+    win.focus();
+  }
+
+
+  const TEACHER_REPORT_TYPES = [
+    ['student', 'Student Summary — Attendance + Infractions'],
+    ['classRollDay', 'Class Roll — One Day'],
+    ['classAttendanceRange', 'Class Attendance — Date Range'],
+    ['formTeacherReport', 'Form Teacher Summary']
+  ];
+  const ADMIN_REPORT_TYPES = [
+    ['departmentSummary', 'Department Summary'],
+    ['attendanceOverview', 'Attendance Overview'],
+    ['classRollDay', 'Class Roll — One Day'],
+    ['classAttendanceRange', 'Class Attendance — Date Range'],
+    ['attendanceByStudent', 'Attendance by Student'],
+    ['absenceReport', 'Absence Report'],
+    ['lateReport', 'Late Report'],
+    ['attendanceByClass', 'Attendance by Class'],
+    ['attendanceByTeacher', 'Attendance by Teacher'],
+    ['student', 'Individual Student Report'],
+    ['studentInfraction', 'Student Infraction Report'],
+    ['infractionByCategory', 'Infractions by Category'],
+    ['infractionBySeverity', 'Infractions by Severity'],
+    ['infractionByClass', 'Infractions by Class'],
+    ['followUpRequired', 'Follow-up Required']
+  ];
+
+  let reportOptions = null;
+  let reportStudentSearchResults = [];
+  let selectedReportStudent = '';
+
+  function loadReportsTab() {
+    const types = appData.profile.isAdmin ? ADMIN_REPORT_TYPES : TEACHER_REPORT_TYPES;
+    $('reportType').innerHTML = types.map(x => `<option value="${x[0]}">${escapeHtml(x[1])}</option>`).join('');
+    $('teacherReportsIntro').classList.toggle('hidden', appData.profile.isAdmin);
+    $('adminReportsIntro').classList.toggle('hidden', !appData.profile.isAdmin);
+    google.script.run.withSuccessHandler(options => {
+      reportOptions = options || {};
+      renderReportFilters();
+    }).withFailureHandler(err => showError(err && err.message ? err.message : String(err))).getAttendanceReportOptions();
+  }
+
+  function renderReportFilters() {
+    const type = $('reportType').value;
+    const o = reportOptions || { teachers: [], subjects: [], classes: [], groups: [], periods: [] };
+    const today = appData.today;
+    let html = '';
+    const needDates = ['student','classAttendanceRange','formTeacherReport','studentInfraction','attendanceOverview','attendanceByStudent','absenceReport','lateReport','attendanceByClass','attendanceByTeacher','departmentSummary','infractionByCategory','infractionBySeverity','infractionByClass','followUpRequired'].includes(type);
+    const needClass = ['classRollDay','classAttendanceRange','formTeacherReport','attendanceByStudent','absenceReport','lateReport','studentInfraction','studentInfraction'].includes(type);
+    const needStudent = ['student'].includes(type);
+
+    if (needDates) {
+      html += `<div><label>From</label><input id="reportFrom" type="date" value="${today}"></div>`;
+      html += `<div><label>To</label><input id="reportTo" type="date" value="${today}"></div>`;
+    }
+    if (needClass) html += `<div><label>Class</label><select id="reportClass"><option value="">All classes</option>${(o.classes||[]).map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></div>`;
+    if (['classRollDay','classAttendanceRange','formTeacherReport','attendanceByStudent','absenceReport','lateReport'].includes(type)) html += `<div><label>Group</label><select id="reportGroup"><option value="">All groups</option>${(o.groups||[]).map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></div>`;
+    if (['classRollDay','classAttendanceRange','formTeacherReport','attendanceByStudent','absenceReport','lateReport','attendanceByClass','attendanceByTeacher','attendanceOverview','departmentSummary'].includes(type)) html += `<div><label>Subject</label><select id="reportSubject"><option value="">All subjects</option>${(o.subjects||[]).map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></div>`;
+    // Individual Student Report is intentionally across ALL subjects; no subject filter is shown.
+    if (['classRollDay','classAttendanceRange','formTeacherReport','attendanceOverview','departmentSummary'].includes(type)) html += `<div><label>Period</label><select id="reportPeriod"><option value="">All periods</option>${(o.periods||[]).map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></div>`;
+    if (appData.profile.isAdmin && ['attendanceOverview','attendanceByStudent','absenceReport','lateReport','attendanceByClass','attendanceByTeacher','departmentSummary','studentInfraction','infractionByCategory','infractionBySeverity','infractionByClass','followUpRequired','classRollDay','classAttendanceRange'].includes(type)) html += `<div><label>Teacher</label><select id="reportTeacher"><option value="">All teachers</option>${(o.teachers||[]).map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}</select></div>`;
+    if (needStudent) {
+      html += `<div class="report-filter-full"><label>Student</label><div style="display:flex;gap:8px"><input id="reportStudentSearch" type="search" placeholder="Type part of the student's name" autocomplete="off"><button id="searchReportStudent" type="button" style="width:auto;min-width:110px">Search</button></div></div>`;
+      html += `<div id="reportStudentSelected" class="report-filter-full"></div>`;
+    }
+    if (type === 'studentInfraction') {
+      html += `<div><label>Severity</label><select id="reportSeverity"><option value="">All severities</option><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select></div>`;
+      html += `<div><label>Infraction</label><select id="reportCategory"><option value="">All infractions</option></select></div>`;
+    }
+    $('reportFilters').innerHTML = html || '<div class="empty">No additional filters required.</div>';
+    $('reportResult').innerHTML = '';
+    selectedReportStudent = '';
+    if ($('searchReportStudent')) $('searchReportStudent').addEventListener('click', searchReportStudent);
+    if ($('reportStudentSearch')) $('reportStudentSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchReportStudent(); });
+    if ($('reportCategory')) {
+      const infractions = ['Arson / Possession of explosive materials','Assault / Fighting','Breaking class','Bullying / Threatening students','Cheating','Cyber Misconduct','Damage to personal property','Defiance of Instructions','Disruptive behaviour in class / on compound','Extortion / Robbery / Stealing','Failure to do homework / assignments / projects','Forgery/ Falsifying Documents','Gross insolence / disrespect','Harassment','Incorrect uniform','Indecent exposure and/or sexual activity','Irregular attendance to school / class','Leaving school without permission','Littering','Loitering during class time','Not bringing textbooks / material to school','Other (open option for description)','Persistently late to school / class','Playing cards / Gambling','Possession / Use of alcohol','Possession / Use of drugs / cigarettes / vapes','Possession / Use of unauthorized electronics','Possession / Use of weapons','Threatening staff','Tresspassing in Unauthorized Areas','Use of obscene language','Vandalism of school property'];
+      $('reportCategory').innerHTML = '<option value="">All infractions</option>' + infractions.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    }
+  }
+
+  function searchReportStudent() {
+    const input = $('reportStudentSearch');
+    const search = input ? input.value.trim() : '';
+    if (!search) { showError('Please type part of a student’s name.'); return; }
+    const filters = { search: search, className: $('reportClass') ? $('reportClass').value : '', subject: $('reportSubject') ? $('reportSubject').value : '', group: $('reportGroup') ? $('reportGroup').value : '' };
+    $('reportStudentResults').innerHTML = '<div class="empty">Searching…</div>';
+    google.script.run.withSuccessHandler(results => {
+      reportStudentSearchResults = results || [];
+      if (!reportStudentSearchResults.length) { $('reportStudentResults').innerHTML = '<div class="empty">No matching students found in your authorized classes.</div>'; return; }
+      $('reportStudentResults').innerHTML = reportStudentSearchResults.map((s,i)=>`<button type="button" class="history-item" data-report-student-index="${i}"><div class="history-main">${escapeHtml(s.studentName)}</div><div class="history-sub">${escapeHtml(s.className)} • ${escapeHtml(s.subject)} • ${escapeHtml(s.group)}</div></button>`).join('');
+      document.querySelectorAll('[data-report-student-index]').forEach(b=>b.addEventListener('click',()=>selectReportStudent(reportStudentSearchResults[Number(b.dataset.reportStudentIndex)].studentName)));
+    }).withFailureHandler(err=>{ $('reportStudentResults').innerHTML=''; showError(err&&err.message?err.message:String(err)); }).searchReportStudents(search, filters);
+  }
+
+  function selectReportStudent(name) {
+    selectedReportStudent = name;
+    $('reportStudentResults').innerHTML = '';
+    $('reportStudentSelected').innerHTML = `<span class="summary"><span>Selected student: <strong>${escapeHtml(name)}</strong></span></span>`;
+  }
+
+  function collectReportFilters() {
+    const type = $('reportType').value;
+    const f = {};
+    ['reportFrom','reportTo','reportClass','reportGroup','reportSubject','reportPeriod','reportTeacher','reportSeverity','reportCategory'].forEach(id=>{ const e=$(id); if(e) f[{reportFrom:'fromDate',reportTo:'toDate',reportClass:'className',reportGroup:'group',reportSubject:'subject',reportPeriod:'period',reportTeacher:'teacherName',reportSeverity:'severity',reportCategory:'category'}[id]]=e.value; });
+    if (['classRollDay'].includes(type)) { f.fromDate = f.fromDate || appData.today; f.toDate = f.fromDate; }
+    if (['classAttendanceRange','formTeacherReport'].includes(type) && !f.fromDate) f.fromDate = appData.today;
+    if (['classAttendanceRange','formTeacherReport'].includes(type) && !f.toDate) f.toDate = f.fromDate;
+    if (['student'].includes(type)) f.studentName = selectedReportStudent;
+    return f;
+  }
+
+  function generateSelectedReport() {
+    clearMessages();
+    const type = $('reportType').value;
+    const filters = collectReportFilters();
+    if (type === 'student' && !filters.studentName) { showError('Please search for and select a student first.'); return; }
+    if (['classRollDay','classAttendanceRange','formTeacherReport'].includes(type) && !filters.className) { showError('Please select a class.'); return; }
+    if (type === 'classRollDay' && filters.fromDate) filters.toDate = filters.fromDate;
+    $('generateReport').disabled = true;
+    $('generateReport').textContent = 'Preparing PDF…';
+    google.script.run
+      .withSuccessHandler(report => {
+        $('generateReport').disabled = false;
+        $('generateReport').textContent = 'Generate Report';
+        renderTeacherPdfReport(report);
+      })
+      .withFailureHandler(err => {
+        $('generateReport').disabled = false;
+        $('generateReport').textContent = 'Generate Report';
+        showError(err && err.message ? err.message : String(err));
+      })
+      .generateReportData(type, filters);
+  }
+
+  function renderTeacherPdfReport(report) {
+    const count = report && report.rows ? report.rows.length : 0;
+    $('reportResult').innerHTML = `<div class="message success show">Report ready. <button type="button" id="printGeneratedReport" class="outline" style="margin-top:10px">Print / Save PDF</button></div><div style="margin-top:10px"><strong>${escapeHtml(report.title || 'Report')}</strong><div class="history-sub">${count} row(s)</div></div>`;
+    $('printGeneratedReport').addEventListener('click', () => printGenericReport(report));
+  }
+
+  function printGenericReport(report) {
+    const esc = escapeHtml;
+    const columns = report.columns || [];
+    const rows = report.rows || [];
+    const th = columns.map(c => `<th>${esc(c)}</th>`).join('');
+    const tr = rows.map(row => `<tr>${columns.map((_, i) => `<td>${esc(row[i] === undefined ? '' : row[i])}</td>`).join('')}</tr>`).join('');
+    let extra = '';
+    if (report.reportingPeriod) extra += `<p class="report-period"><strong>Reporting Period:</strong> ${esc(report.reportingPeriod)}</p>`;
+    if (report.observations && report.observations.length) {
+      extra += '<h2>Overview</h2>' + report.observations.map(x => `<p>${esc(x)}</p>`).join('');
+    }
+    if (report.sections && report.sections.length) {
+      extra += report.sections.map(sec => {
+        const sc = sec.columns || [];
+        const sr = sec.rows || [];
+        const sth = sc.map(c => `<th>${esc(c)}</th>`).join('');
+        const str = sr.map(row => `<tr>${sc.map((_,i) => `<td>${esc(row[i] === undefined ? '' : row[i])}</td>`).join('')}</tr>`).join('');
+        return `<div class="report-section"><h2>${esc(sec.title || 'Section')}</h2>${sr.length ? `<table><thead><tr>${sth}</tr></thead><tbody>${str}</tbody></table>` : '<p class="note">No records found for this section.</p>'}</div>`;
+      }).join('');
+    }
+    if (report.detailsBySeverity) {
+      extra += '<h2>Infractions by Severity</h2>';
+      ['Low','Medium','High','Urgent'].forEach(sev => {
+        const items = report.detailsBySeverity[sev] || [];
+        extra += `<h3>${esc(sev)} (${items.length})</h3>${items.length ? '<ul>' + items.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '<p>None recorded.</p>'}`;
+      });
+    }
+    const win = window.open('', '_blank');
+    if (!win) { showError('Please allow pop-ups for this site to print the report.'); return; }
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(report.title || 'CWSS Report')}</title><style>body{font-family:Arial,sans-serif;margin:34px;color:#17212b}.report-head{text-align:center;margin-bottom:20px;border-bottom:2px solid #17365d;padding-bottom:12px}.school{font-size:18px;font-weight:700;color:#17365d}.dept{font-size:15px;font-weight:700;color:#394b5a;margin-top:3px}.report-name{font-size:16px;font-weight:700;text-transform:uppercase;margin-top:10px}.generated,.report-period{text-align:right;font-size:11px;color:#687684;margin-top:8px}.report-period{text-align:left;font-size:12px;color:#394b5a}h2{color:#17365d;margin-top:24px;border-bottom:1px solid #cbd2d9;padding-bottom:5px}h3{color:#394b5a;margin-top:14px}p{line-height:1.45}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{border:1px solid #cbd2d9;padding:7px;font-size:11px;text-align:left;vertical-align:top}th{background:#eef2f6}.note{font-size:12px;color:#687684}.report-section{page-break-inside:auto}.report-section table{page-break-inside:auto}ul{line-height:1.5}@media print{button{display:none}.page-break{page-break-before:always}}</style></head><body><div class="report-head"><div class="school">Couva West Secondary School</div><div class="dept">Mathematics Information Technology Department</div><div class="report-name">${esc(report.title || 'Report')}</div></div><div class="generated">Generated: ${esc(new Date().toLocaleString())}</div>${extra}${(!report.sections || !report.sections.length) && rows.length ? `<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>` : ((!report.sections || !report.sections.length) ? '<p>No records found.</p>' : '')}<p style="margin-top:28px"><button onclick="window.print()">Print / Save as PDF</button></p></body></html>`);
+    win.document.close();
+    win.focus();
+  }
+
+  function CONFIG_LABEL(){ return appData ? appData.schoolName + ' — ' + appData.departmentName : 'Couva West Secondary School'; }
+
+  function loadStudents() {
+    clearMessages();
+    if (!selectedAssignment) { showError('Please select a class.'); return; }
+    if (!selectedPeriods.length) { showError('Please select at least one period (1 to 6).'); return; }
+    $('loadStudents').disabled = true; $('loadStudents').textContent = 'Loading…';
+
+    if (!navigator.onLine) {
+      const cached = getCachedStudentsForSelection();
+      if (cached && cached.length) {
+        students = cached;
+        showOfflineNotice('Offline mode: using the student list previously saved for this class.');
+        loadExistingAttendance();
+        return;
+      }
+      $('loadStudents').disabled = false; $('loadStudents').textContent = 'Load Students';
+      showError('No saved student list is available for this class on this phone. Connect to the internet and load the class once.');
+      return;
+    }
+
+    google.script.run.withSuccessHandler(result => {
+      students = result || [];
+      cacheStudentsForSelection(students);
+      loadExistingAttendance();
+    }).withFailureHandler(err => {
+      const cached = getCachedStudentsForSelection();
+      if (cached && cached.length) {
+        students = cached;
+        showOfflineNotice('The school system could not be reached, so the saved student list is being used.');
+        loadExistingAttendance();
+        return;
+      }
+      $('loadStudents').disabled = false; $('loadStudents').textContent = 'Load Students';
+      showError(err && err.message ? err.message : String(err));
+    }).getStudents(selectedAssignment.subject, selectedAssignment.className, selectedAssignment.group || 'ALL');
+  }
+
+  function parsePeriodSelection(value) {
+    const nums = []; const re = /\d+/g; let m;
+    while ((m = re.exec(String(value || ''))) !== null) { const n = Number(m[0]); if (n >= 1 && n <= 6 && !nums.includes(n)) nums.push(n); }
+    return nums.sort((a,b)=>a-b);
+  }
+
+  function loadExistingAttendance() {
+    if (!navigator.onLine) {
+      const pending = getPendingOfflineAttendanceForSelection();
+      if (pending && pending.payload) {
+        existingAttendance = true;
+        $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
+        const pendingRecords = attendanceRecordsFromStudents(pending.payload.students);
+        cacheExistingAttendanceForSelection({ exists: true, records: pendingRecords });
+        renderStudents(pendingRecords);
+        showOfflineNotice('Offline mode: showing attendance saved on this phone for this class/date/period.');
+        updatePendingAttendanceStatus();
+        return;
+      }
+      const cached = getCachedExistingAttendanceForSelection();
+      if (cached) {
+        existingAttendance = !!cached.exists;
+        $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
+        renderStudents(cached.records || {});
+        updatePendingAttendanceStatus();
+        return;
+      }
+      existingAttendance = false;
+      $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
+      renderStudents({});
+      showOfflineNotice('Offline mode: no previously saved attendance check is available for this class/date/period.');
+      updatePendingAttendanceStatus();
+      return;
+    }
+
+    google.script.run.withSuccessHandler(result => {
+      cacheExistingAttendanceForSelection(result);
+      existingAttendance = !!(result && result.exists);
+      $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
+      renderStudents(result && result.records ? result.records : {});
+    }).withFailureHandler(err => {
+      const cached = getCachedExistingAttendanceForSelection();
+      if (cached) {
+        existingAttendance = !!cached.exists;
+        $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
+        renderStudents(cached.records || {});
+        showOfflineNotice('The school system could not be reached, so the previously saved attendance check is being used.');
+        return;
+      }
+      $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
+      showError(err && err.message ? err.message : String(err));
+    }).getExistingAttendance(selectedAssignment.subject, selectedAssignment.className, selectedAssignment.group || 'ALL', selectedDate, selectedPeriod);
+  }
+
+  function updateAttendanceSummary() {
+    const counts = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0 };
+    document.querySelectorAll('.student').forEach(card => { const selected = card.querySelector('.attendance-btn.selected'); const status = selected?.dataset.status || 'PRESENT'; if (counts[status] !== undefined) counts[status]++; });
+    $('summaryTotal').textContent = document.querySelectorAll('.student').length; $('summaryPeriods').textContent = periodLabel(selectedPeriod); $('summaryPresent').textContent = counts.PRESENT; $('summaryAbsent').textContent = counts.ABSENT; $('summaryLate').textContent = counts.LATE; $('summaryExcused').textContent = counts.EXCUSED;
+  }
+
+  function renderStudents(records) {
+    $('studentsCard').classList.remove('hidden'); $('studentCount').textContent = students.length + ' active student(s) loaded • ' + periodLabel(selectedPeriod) + '.' + (existingAttendance ? ' Existing attendance found — you can update it.' : '');
+    if (!students.length) { $('students').innerHTML = '<div class="empty">No active students were found for this class and group.</div>'; $('saveAttendance').disabled = true; return; }
+    $('saveAttendance').disabled = false; $('saveAttendance').textContent = existingAttendance ? 'Update Attendance' : 'Save Attendance';
+    $('students').innerHTML = students.map((s, i) => { const saved = records[(s.studentName || '').toUpperCase()] || {}; const status = saved.status || 'PRESENT'; return `<div class="student" data-index="${i}"><div class="student-name">${i + 1}. ${escapeHtml(s.studentName)}</div><div class="attendance-buttons">${attendanceButton('PRESENT','Present',status)}${attendanceButton('ABSENT','Absent',status)}${attendanceButton('LATE','Late',status)}${attendanceButton('EXCUSED','Excused',status)}</div><div class="student-comment"><input class="comment" type="text" value="${escapeHtml(saved.comment || '')}" placeholder="Optional comment"></div></div>`; }).join('');
+    document.querySelectorAll('.attendance-btn').forEach(button => button.addEventListener('click', () => { const card = button.closest('.student'); card.querySelectorAll('.attendance-btn').forEach(b => b.classList.remove('selected')); button.classList.add('selected'); updateAttendanceSummary(); }));
+    updateAttendanceSummary();
+  }
+
+  function attendanceButton(value, label, selected) { return `<button type="button" class="attendance-btn ${value === selected ? 'selected' : ''}" data-status="${value}">${label}</button>`; }
+
+  function saveAttendance() {
+    clearMessages(); if (!students.length || !selectedAssignment) return;
+    const cards = [...document.querySelectorAll('.student')];
+    const payloadStudents = cards.map(card => ({
+      studentName: students[Number(card.dataset.index)].studentName,
+      status: card.querySelector('.attendance-btn.selected')?.dataset.status || 'PRESENT',
+      comment: card.querySelector('.comment').value
+    }));
+    const payload = {
+      attendanceDate: selectedDate,
+      period: selectedPeriod,
+      periods: selectedPeriods,
+      subject: selectedAssignment.subject,
+      className: selectedAssignment.className,
+      group: selectedAssignment.group || 'ALL',
+      students: payloadStudents
+    };
+    const localRecords = attendanceRecordsFromStudents(payloadStudents);
+
+    if (!navigator.onLine) {
+      const saved = queueOfflineAttendance(payload);
+      if (!saved) {
+        showError('The attendance could not be saved on this phone. Please make sure the phone has enough storage and try again.');
+        return;
+      }
+      existingAttendance = true;
+      cacheExistingAttendanceForSelection({ exists: true, records: localRecords });
+      $('saveAttendance').disabled = false;
+      $('saveAttendance').textContent = 'Update Attendance';
+      $('studentCount').textContent = students.length + ' active student(s) loaded. Attendance is saved on this phone for ' + formatDisplayDate(selectedDate) + ' • ' + periodLabel(selectedPeriod) + '.';
+      updatePendingAttendanceStatus();
+      showSuccess('Attendance saved on this phone. It will sync automatically when you are back online.');
+      return;
+    }
+
+    $('saveAttendance').disabled = true; $('saveAttendance').textContent = existingAttendance ? 'Updating…' : 'Saving…';
+    google.script.run.withSuccessHandler(result => {
+      existingAttendance = true;
+      cacheExistingAttendanceForSelection({ exists: true, records: localRecords });
+      $('saveAttendance').disabled = false; $('saveAttendance').textContent = 'Update Attendance';
+      $('studentCount').textContent = students.length + ' active student(s) loaded. Attendance is saved for ' + formatDisplayDate(selectedDate) + ' • ' + periodLabel(selectedPeriod) + '.';
+      updatePendingAttendanceStatus();
+      showSuccess(result.message);
+      syncOfflineAttendanceQueue();
+    }).withFailureHandler(err => {
+      // If the connection disappeared while saving, place this exact attendance
+      // session into the offline queue so the teacher does not lose the work.
+      if (!navigator.onLine) {
+        const saved = queueOfflineAttendance(payload);
+        $('saveAttendance').disabled = false;
+        $('saveAttendance').textContent = existingAttendance ? 'Update Attendance' : 'Save Attendance';
+        if (saved) {
+          existingAttendance = true;
+          cacheExistingAttendanceForSelection({ exists: true, records: localRecords });
+          updatePendingAttendanceStatus();
+          showSuccess('The connection was lost. Attendance was saved on this phone and will sync automatically when you are back online.');
+        } else {
+          showError('The connection was lost and the attendance could not be saved on this phone. Please try again.');
+        }
+        return;
+      }
+      $('saveAttendance').disabled = false; $('saveAttendance').textContent = existingAttendance ? 'Update Attendance' : 'Save Attendance';
+      showError(err && err.message ? err.message : String(err));
+    }).saveAttendance(payload);
+  }
+
+  function periodLabel(value) {
+    if (!value) return '—';
+    return String(value).split(',').map(part => { const p = part.trim(); return p ? 'Period ' + p : ''; }).filter(Boolean).join(', ');
+  }
+
+  function escapeHtml(value) { return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+  $('changeDate').addEventListener('click', toggleDateEditor);
+  $('attendanceDate').addEventListener('change', dateChanged);
+  $('loadStudents').addEventListener('click', loadStudents);
+  $('saveAttendance').addEventListener('click', saveAttendance);
+  if (!CWSS_BRIDGE_MODE) loadApp();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js').catch(function(error) {
+        console.warn('CWSS service worker registration failed:', error);
+      });
+    });
+  }
+</script>
+</body>
+</html>
