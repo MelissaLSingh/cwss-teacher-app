@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>CWSS Teacher Management System</title>
   <style>
@@ -306,176 +305,192 @@
 
 <script>
   // ============================================================
-  // CWSS STAGE 3A — OFFLINE PWA SHELL
+  // CWSS GITHUB PWA -> GOOGLE APPS SCRIPT BRIDGE
   // ============================================================
-  // Change this one value after the Apps Script web-app deployment
-  // URL is known. It is saved locally after the first successful setup.
-  const CWSS_BACKEND_URL_DEFAULT = 'PASTE-YOUR-CURRENT-APPS-SCRIPT-WEB-APP-URL-HERE';
-  const CWSS_BACKEND_URL_KEY = 'cwss_pwa_backend_url';
-  const CWSS_RPC_TIMEOUT_MS = 30000;
+  // The GitHub version cannot use google.script.run directly.
+  // Instead it communicates with the deployed Apps Script web app
+  // through a hidden iframe. The Apps Script Index.html receives
+  // cwss-rpc-request messages and runs the requested server function.
+  // ============================================================
 
-  (function installCwssOfflineBridge() {
-    const savedUrl = localStorage.getItem(CWSS_BACKEND_URL_KEY);
-    const backendUrl = savedUrl || CWSS_BACKEND_URL_DEFAULT;
-    window.CWSS_BACKEND_URL = backendUrl;
+  const CWSS_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFoai6_XAaVqb_J3rBjpNPsJaNLJuTOJw7ItiMhLvZMWAsqYVPTcL_2fyBUTa/exec';
+  const CWSS_BRIDGE_ORIGIN = new URL(CWSS_APPS_SCRIPT_URL).origin;
+  const CWSS_BRIDGE_TIMEOUT_MS = 30000;
 
-    if (!backendUrl || backendUrl.indexOf('PASTE-YOUR-CURRENT') === 0) {
-      document.addEventListener('DOMContentLoaded', function() {
-        const box = document.createElement('div');
-        box.style.cssText = 'position:fixed;inset:0;background:#f4f7fb;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Arial,sans-serif';
-        box.innerHTML = '<div style="max-width:520px;background:white;padding:24px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.12)">' +
-          '<h2 style="margin-top:0">CWSS App — one-time setup</h2>' +
-          '<p>Paste the current CWSS Google Apps Script web-app link below. This is only needed once on this phone.</p>' +
-          '<input id="cwssBackendUrlInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccd5df;border-radius:10px;font-size:16px">' +
-          '<button id="cwssBackendUrlSave" style="margin-top:12px;width:100%;padding:13px;border:0;border-radius:10px;background:#163b63;color:#fff;font-size:16px;font-weight:700">Save CWSS connection</button>' +
-          '<p id="cwssBackendUrlError" style="color:#b42318;margin-bottom:0"></p>' +
-          '</div>';
-        document.body.appendChild(box);
-        document.getElementById('cwssBackendUrlSave').onclick = function() {
-          const value = document.getElementById('cwssBackendUrlInput').value.trim();
-          if (!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec(?:[?#].*)?$/.test(value)) {
-            document.getElementById('cwssBackendUrlError').textContent = 'Please paste the normal /exec web-app link from Apps Script.';
-            return;
-          }
-          localStorage.setItem(CWSS_BACKEND_URL_KEY, value);
-          location.reload();
-        };
-      });
-      return;
-    }
+  let cwssBridgeFrame = null;
+  let cwssBridgeReady = false;
+  let cwssBridgeLoadPromise = null;
+  let cwssBridgeRequestCounter = 0;
+  const cwssBridgePending = new Map();
 
-    let frame = null;
-    let frameReady = false;
-    let queue = [];
-    let requestCounter = 0;
-    const pending = new Map();
+  function cwssShowBridgeFrameError(message) {
+    console.error('CWSS bridge:', message);
+  }
 
-    function ensureFrame() {
-      if (frame) return;
-      frame = document.createElement('iframe');
-      frame.id = 'cwssBackendBridgeFrame';
-      frame.title = 'CWSS connection';
-      frame.setAttribute('aria-hidden', 'true');
-      frame.style.cssText = 'position:fixed;width:1px;height:1px;border:0;opacity:0;pointer-events:none;left:-10px;bottom:-10px';
-      frame.addEventListener('load', function() {
-        frameReady = true;
-        const waiting = queue;
-        queue = [];
-        waiting.forEach(sendRpc);
-      });
-      frame.src = backendUrl + (backendUrl.indexOf('?') >= 0 ? '&' : '?') + 'bridge=1';
-      document.documentElement.appendChild(frame);
-    }
+  function cwssCreateBridgeFrame() {
+    if (cwssBridgeLoadPromise) return cwssBridgeLoadPromise;
 
-    function sendRpc(item) {
-      if (!frameReady || !frame || !frame.contentWindow) { queue.push(item); return; }
-      pending.set(item.requestId, item);
-      frame.contentWindow.postMessage({
-        type: 'cwss-rpc-request',
-        requestId: item.requestId,
-        method: item.method,
-        args: item.args
-      }, '*');
-      item.timeoutId = setTimeout(function() {
-        if (!pending.has(item.requestId)) return;
-        pending.delete(item.requestId);
-        item.failure && item.failure({ message: 'The CWSS server could not be reached. The phone may be offline.' });
-      }, CWSS_RPC_TIMEOUT_MS);
-    }
+    cwssBridgeLoadPromise = new Promise((resolve, reject) => {
+      cwssBridgeFrame = document.createElement('iframe');
+      cwssBridgeFrame.title = 'CWSS secure server connection';
+      cwssBridgeFrame.setAttribute('aria-hidden', 'true');
+      cwssBridgeFrame.style.position = 'fixed';
+      cwssBridgeFrame.style.width = '1px';
+      cwssBridgeFrame.style.height = '1px';
+      cwssBridgeFrame.style.border = '0';
+      cwssBridgeFrame.style.opacity = '0';
+      cwssBridgeFrame.style.pointerEvents = 'none';
+      cwssBridgeFrame.style.left = '-10000px';
+      cwssBridgeFrame.style.top = '-10000px';
 
-    window.addEventListener('message', function(event) {
-      if (!event || !event.data || event.data.type !== 'cwss-rpc-response') return;
-      const item = pending.get(event.data.requestId);
-      if (!item) return;
-      pending.delete(event.data.requestId);
-      clearTimeout(item.timeoutId);
-      if (event.data.ok) {
-        item.success && item.success(event.data.result);
-      } else {
-        item.failure && item.failure({ message: event.data.error || 'CWSS server request failed.' });
-      }
+      const timer = setTimeout(() => {
+        reject(new Error('The CWSS server bridge did not load within 30 seconds.'));
+      }, CWSS_BRIDGE_TIMEOUT_MS);
+
+      cwssBridgeFrame.onload = () => {
+        clearTimeout(timer);
+        cwssBridgeReady = true;
+        resolve(cwssBridgeFrame);
+      };
+
+      cwssBridgeFrame.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error('The CWSS server bridge could not be loaded.'));
+      };
+
+      cwssBridgeFrame.src = CWSS_APPS_SCRIPT_URL + (CWSS_APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'bridge=1';
+      document.body.appendChild(cwssBridgeFrame);
+    }).catch(error => {
+      cwssBridgeLoadPromise = null;
+      cwssBridgeReady = false;
+      cwssShowBridgeFrameError(error.message || String(error));
+      throw error;
     });
 
-    function makeRunner(state) {
-      return new Proxy({}, {
-        get: function(target, property) {
-          if (property === 'withSuccessHandler') return function(fn) { state.success = fn; return makeRunner(state); };
-          if (property === 'withFailureHandler') return function(fn) { state.failure = fn; return makeRunner(state); };
-          if (property === 'withUserObject') return function(obj) { state.userObject = obj; return makeRunner(state); };
-          if (typeof property !== 'string') return undefined;
-          return function() {
-            const args = Array.prototype.slice.call(arguments);
-            const requestId = 'cwss-' + Date.now() + '-' + (++requestCounter);
-            sendRpc({
-              requestId: requestId,
-              method: property,
-              args: args,
-              success: function(result) { if (state.success) state.success(result, state.userObject); },
-              failure: function(error) { if (state.failure) state.failure(error, state.userObject); }
-            });
-          };
-        }
-      });
+    return cwssBridgeLoadPromise;
+  }
+
+  window.addEventListener('message', function(event) {
+    if (event.origin !== CWSS_BRIDGE_ORIGIN) return;
+    const message = event.data;
+    if (!message || message.type !== 'cwss-rpc-response' || !message.requestId) return;
+
+    const pending = cwssBridgePending.get(message.requestId);
+    if (!pending) return;
+
+    clearTimeout(pending.timeout);
+    cwssBridgePending.delete(message.requestId);
+
+    if (message.ok) {
+      pending.success(message.result);
+    } else {
+      pending.failure(new Error(message.error || 'The CWSS server returned an error.'));
     }
+  });
 
-    window.google = window.google || {};
-    window.google.script = window.google.script || {};
-    window.google.script.run = makeRunner({ success: null, failure: null, userObject: null });
+  function cwssServerCall(method, args) {
+    return cwssCreateBridgeFrame().then(frame => new Promise((resolve, reject) => {
+      const requestId = 'cwss-' + Date.now() + '-' + (++cwssBridgeRequestCounter);
+      const timeout = setTimeout(() => {
+        cwssBridgePending.delete(requestId);
+        reject(new Error('The CWSS server did not respond. Please check your connection and try again.'));
+      }, CWSS_BRIDGE_TIMEOUT_MS);
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureFrame);
-    else ensureFrame();
-  })();
-</script>
-<script>
-  // ============================================================
-  // CWSS OFFLINE APP SHELL BRIDGE
-  // When this Apps Script page is loaded inside the offline PWA
-  // shell as ?bridge=1, it acts only as a secure RPC bridge.
-  // The actual UI is supplied by the cached PWA shell.
-  // ============================================================
-  const CWSS_BRIDGE_MODE = new URLSearchParams(window.location.search).get('bridge') === '1';
+      cwssBridgePending.set(requestId, {
+        timeout: timeout,
+        success: resolve,
+        failure: reject
+      });
 
-  if (CWSS_BRIDGE_MODE) {
-    window.addEventListener('message', function(event) {
-      const message = event && event.data;
-      if (!message || message.type !== 'cwss-rpc-request' || !message.requestId || !message.method) return;
-
-      const parentOrigin = event.origin || '*';
       try {
-        const runner = google.script.run
-          .withSuccessHandler(function(result) {
-            event.source.postMessage({
-              type: 'cwss-rpc-response',
-              requestId: message.requestId,
-              ok: true,
-              result: result
-            }, parentOrigin);
-          })
-          .withFailureHandler(function(error) {
-            event.source.postMessage({
-              type: 'cwss-rpc-response',
-              requestId: message.requestId,
-              ok: false,
-              error: error && error.message ? error.message : String(error)
-            }, parentOrigin);
-          });
-
-        if (typeof runner[message.method] !== 'function') {
-          throw new Error('CWSS bridge: server function not available: ' + message.method);
-        }
-
-        runner[message.method].apply(runner, Array.isArray(message.args) ? message.args : []);
+        frame.contentWindow.postMessage({
+          type: 'cwss-rpc-request',
+          requestId: requestId,
+          method: method,
+          args: Array.isArray(args) ? args : []
+        }, CWSS_BRIDGE_ORIGIN);
       } catch (error) {
-        event.source.postMessage({
-          type: 'cwss-rpc-response',
-          requestId: message.requestId,
-          ok: false,
-          error: error && error.message ? error.message : String(error)
-        }, parentOrigin);
+        clearTimeout(timeout);
+        cwssBridgePending.delete(requestId);
+        reject(error);
       }
+    }));
+  }
+
+  // This intentionally mimics the small part of google.script.run used
+  // by the existing CWSS application, so the rest of the application can
+  // remain unchanged.
+  const cwssServerRun = new Proxy({}, {
+    get: function(target, property) {
+      if (property === 'withSuccessHandler') {
+        return function(handler) {
+          const chain = cwssServerRun.__makeChain();
+          chain.successHandler = typeof handler === 'function' ? handler : function() {};
+          return chain;
+        };
+      }
+      if (property === 'withFailureHandler') {
+        return function(handler) {
+          const chain = cwssServerRun.__makeChain();
+          chain.failureHandler = typeof handler === 'function' ? handler : function() {};
+          return chain;
+        };
+      }
+      if (property === '__makeChain') {
+        return function() {
+          const state = {
+            successHandler: function() {},
+            failureHandler: function(error) { console.error(error); }
+          };
+          return new Proxy(state, {
+            get: function(obj, method) {
+              if (method === 'withSuccessHandler') {
+                return function(handler) {
+                  obj.successHandler = typeof handler === 'function' ? handler : function() {};
+                  return this;
+                };
+              }
+              if (method === 'withFailureHandler') {
+                return function(handler) {
+                  obj.failureHandler = typeof handler === 'function' ? handler : function(error) { console.error(error); };
+                  return this;
+                };
+              }
+              if (typeof method === 'string') {
+                return function() {
+                  const args = Array.prototype.slice.call(arguments);
+                  cwssServerCall(method, args).then(obj.successHandler).catch(obj.failureHandler);
+                };
+              }
+              return obj[method];
+            }
+          });
+        };
+      }
+      if (typeof property === 'string') {
+        return function() {
+          const chain = cwssServerRun.__makeChain();
+          const args = Array.prototype.slice.call(arguments);
+          cwssServerCall(property, args).then(chain.successHandler).catch(chain.failureHandler);
+        };
+      }
+      return target[property];
+    }
+  });
+
+  // Register the service worker when the GitHub repository contains sw.js.
+  // This makes the GitHub version installable and allows the cached app shell
+  // to open when the school connection is unavailable.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js').catch(function(error) {
+        console.warn('CWSS service worker registration failed:', error);
+      });
     });
   }
 
+</script>
+<script>
   let appData = null;
   let students = [];
   let selectedAssignment = null;
@@ -758,7 +773,7 @@
         return;
       }
 
-      google.script.run
+      cwssServerRun
         .withSuccessHandler(result => {
           removeOfflineAttendance(item.queueId);
           synced++;
@@ -841,7 +856,7 @@
       return;
     }
 
-    google.script.run.withSuccessHandler(data => {
+    cwssServerRun.withSuccessHandler(data => {
       cacheAppData(data);
       applyAppData(data, false);
     }).withFailureHandler(err => {
@@ -957,7 +972,7 @@
   }
 
   function loadInfractionTab() {
-    google.script.run.withSuccessHandler(options => {
+    cwssServerRun.withSuccessHandler(options => {
       infractionAssignments = options.assignments || appData.assignments || [];
       fillSelect('infractionClass', infractionAssignments.map(a => a.className + '|' + a.subject + '|' + (a.group || 'ALL')), 'Choose a class');
       // restore readable class labels
@@ -993,7 +1008,7 @@
     const a = infractionAssignments[Number(i)];
     $('infractionSubject').textContent = a.subject || '—'; $('infractionGroup').textContent = a.group || 'ALL';
     $('infractionStudent').disabled = true; $('infractionStudent').innerHTML = '<option value="">Loading students…</option>';
-    google.script.run.withSuccessHandler(result => {
+    cwssServerRun.withSuccessHandler(result => {
       infractionStudents = result || [];
       $('infractionStudent').innerHTML = '<option value="">Choose a student</option>' + infractionStudents.map(s => `<option value="${escapeHtml(s.studentName)}">${escapeHtml(s.studentName)}</option>`).join('');
       $('infractionStudent').disabled = false;
@@ -1039,7 +1054,7 @@
       followUpRequired: $('infractionFollowUp').checked
     };
     $('saveInfraction').disabled = true; $('saveInfraction').textContent = 'Saving…';
-    google.script.run.withSuccessHandler(result => {
+    cwssServerRun.withSuccessHandler(result => {
       $('saveInfraction').disabled = false; $('saveInfraction').textContent = 'Save Infraction Report';
       showSuccess(result.message);
       $('infractionType').value=''; $('infractionDetails').value=''; $('infractionAction').value=''; $('infractionCategory').value=''; $('infractionSeverity').value=''; $('infractionFollowUp').checked=false; toggleOtherInfraction();
@@ -1049,7 +1064,7 @@
 
   function loadInfractionHistory() {
     $('infractionHistoryLoading').textContent = 'Loading recent reports…'; $('infractionHistoryLoading').classList.remove('hidden'); $('infractionHistory').innerHTML='';
-    google.script.run.withSuccessHandler(items => {
+    cwssServerRun.withSuccessHandler(items => {
       if (!items || !items.length) { $('infractionHistoryLoading').textContent='No infraction reports found.'; return; }
       $('infractionHistoryLoading').classList.add('hidden');
       $('infractionHistory').innerHTML = items.slice(0,20).map(item => `<div class="history-item" style="cursor:default"><div class="history-main">${escapeHtml(item.studentName)} — ${escapeHtml(item.displayDate)}</div><div class="history-sub">${escapeHtml(item.className)} • ${escapeHtml(item.subject)} • ${escapeHtml(item.group)} • Periods ${escapeHtml(periodLabel(item.period))}${appData.profile.isAdmin ? ' • ' + escapeHtml(item.teacherName) : ''}</div><div class="history-counts"><span>${escapeHtml(item.category)}</span><span>${escapeHtml(item.severity)}</span><span>${escapeHtml(item.status)}</span>${item.followUpRequired ? '<span>Follow-up required</span>' : ''}</div><div class="history-sub" style="margin-top:6px">${escapeHtml(item.infraction)}</div></div>`).join('');
@@ -1057,7 +1072,7 @@
   }
 
   function loadReportOptionsAndHistory() {
-    google.script.run.withSuccessHandler(options => {
+    cwssServerRun.withSuccessHandler(options => {
       fillSelect('teacherFilter', options.teachers || [], 'All teachers');
       fillSelect('historySubject', options.subjects || [], 'All subjects');
       fillSelect('historyClass', options.classes || [], 'All classes');
@@ -1078,8 +1093,8 @@
   function loadHistoryWithFilters() {
     $('historyLoading').textContent = 'Loading attendance history…'; $('historyLoading').classList.remove('hidden'); $('history').innerHTML = '';
     const filters = { teacherName: $('teacherFilter').value, subject: $('historySubject').value, className: $('historyClass').value, group: $('historyGroup').value, period: $('historyPeriod').value, fromDate: $('historyFrom').value, toDate: $('historyTo').value };
-    google.script.run.withSuccessHandler(items => renderAttendanceHistory(items || [])).withFailureHandler(err => { $('historyLoading').textContent = 'Attendance history could not be loaded.'; showError(err && err.message ? err.message : String(err)); }).getAttendanceReports(filters);
-    google.script.run.withSuccessHandler(report => renderReportSummary(report || {})).withFailureHandler(err => { showError(err && err.message ? err.message : String(err)); }).getAttendanceReportSummary(filters);
+    cwssServerRun.withSuccessHandler(items => renderAttendanceHistory(items || [])).withFailureHandler(err => { $('historyLoading').textContent = 'Attendance history could not be loaded.'; showError(err && err.message ? err.message : String(err)); }).getAttendanceReports(filters);
+    cwssServerRun.withSuccessHandler(report => renderReportSummary(report || {})).withFailureHandler(err => { showError(err && err.message ? err.message : String(err)); }).getAttendanceReportSummary(filters);
   }
 
   function renderReportSummary(report) {
@@ -1132,7 +1147,7 @@
     filters.search = search;
     $('studentSearchResults').innerHTML = '<div class="empty">Searching…</div>';
     $('studentReport').innerHTML = '';
-    google.script.run.withSuccessHandler(results => renderStudentSearchResults(results || [], filters)).withFailureHandler(err => { showError(err && err.message ? err.message : String(err)); $('studentSearchResults').innerHTML = ''; }).getStudentAttendanceSearch(filters);
+    cwssServerRun.withSuccessHandler(results => renderStudentSearchResults(results || [], filters)).withFailureHandler(err => { showError(err && err.message ? err.message : String(err)); $('studentSearchResults').innerHTML = ''; }).getStudentAttendanceSearch(filters);
   }
 
   function renderStudentSearchResults(results, filters) {
@@ -1145,7 +1160,7 @@
     $('studentReportLoading').textContent = 'Loading ' + studentName + '…';
     $('studentReportLoading').classList.remove('hidden');
     $('studentReport').innerHTML = '';
-    google.script.run.withSuccessHandler(report => {
+    cwssServerRun.withSuccessHandler(report => {
       if (!report) { $('studentReportLoading').textContent = 'No student report found.'; return; }
       $('studentReportLoading').classList.add('hidden');
       const a = report.attendance || {};
@@ -1243,7 +1258,7 @@
     $('reportType').innerHTML = types.map(x => `<option value="${x[0]}">${escapeHtml(x[1])}</option>`).join('');
     $('teacherReportsIntro').classList.toggle('hidden', appData.profile.isAdmin);
     $('adminReportsIntro').classList.toggle('hidden', !appData.profile.isAdmin);
-    google.script.run.withSuccessHandler(options => {
+    cwssServerRun.withSuccessHandler(options => {
       reportOptions = options || {};
       renderReportFilters();
     }).withFailureHandler(err => showError(err && err.message ? err.message : String(err))).getAttendanceReportOptions();
@@ -1293,7 +1308,7 @@
     if (!search) { showError('Please type part of a student’s name.'); return; }
     const filters = { search: search, className: $('reportClass') ? $('reportClass').value : '', subject: $('reportSubject') ? $('reportSubject').value : '', group: $('reportGroup') ? $('reportGroup').value : '' };
     $('reportStudentResults').innerHTML = '<div class="empty">Searching…</div>';
-    google.script.run.withSuccessHandler(results => {
+    cwssServerRun.withSuccessHandler(results => {
       reportStudentSearchResults = results || [];
       if (!reportStudentSearchResults.length) { $('reportStudentResults').innerHTML = '<div class="empty">No matching students found in your authorized classes.</div>'; return; }
       $('reportStudentResults').innerHTML = reportStudentSearchResults.map((s,i)=>`<button type="button" class="history-item" data-report-student-index="${i}"><div class="history-main">${escapeHtml(s.studentName)}</div><div class="history-sub">${escapeHtml(s.className)} • ${escapeHtml(s.subject)} • ${escapeHtml(s.group)}</div></button>`).join('');
@@ -1327,7 +1342,7 @@
     if (type === 'classRollDay' && filters.fromDate) filters.toDate = filters.fromDate;
     $('generateReport').disabled = true;
     $('generateReport').textContent = 'Preparing PDF…';
-    google.script.run
+    cwssServerRun
       .withSuccessHandler(report => {
         $('generateReport').disabled = false;
         $('generateReport').textContent = 'Generate Report';
@@ -1402,7 +1417,7 @@
       return;
     }
 
-    google.script.run.withSuccessHandler(result => {
+    cwssServerRun.withSuccessHandler(result => {
       students = result || [];
       cacheStudentsForSelection(students);
       loadExistingAttendance();
@@ -1454,7 +1469,7 @@
       return;
     }
 
-    google.script.run.withSuccessHandler(result => {
+    cwssServerRun.withSuccessHandler(result => {
       cacheExistingAttendanceForSelection(result);
       existingAttendance = !!(result && result.exists);
       $('loadStudents').disabled = false; $('loadStudents').textContent = 'Reload Students';
@@ -1526,7 +1541,7 @@
     }
 
     $('saveAttendance').disabled = true; $('saveAttendance').textContent = existingAttendance ? 'Updating…' : 'Saving…';
-    google.script.run.withSuccessHandler(result => {
+    cwssServerRun.withSuccessHandler(result => {
       existingAttendance = true;
       cacheExistingAttendanceForSelection({ exists: true, records: localRecords });
       $('saveAttendance').disabled = false; $('saveAttendance').textContent = 'Update Attendance';
@@ -1566,17 +1581,7 @@
   $('attendanceDate').addEventListener('change', dateChanged);
   $('loadStudents').addEventListener('click', loadStudents);
   $('saveAttendance').addEventListener('click', saveAttendance);
-  if (!CWSS_BRIDGE_MODE) loadApp();
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('./sw.js').catch(function(error) {
-        console.warn('CWSS service worker registration failed:', error);
-      });
-    });
-  }
+  loadApp();
 </script>
 </body>
 </html>
