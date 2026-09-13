@@ -373,10 +373,8 @@
   }
 
   window.addEventListener('message', function(event) {
-    if (!cwssBridgeFrame || event.source !== cwssBridgeFrame.contentWindow) return;
     const message = event.data;
     if (!message || message.type !== 'cwss-rpc-response' || !message.requestId) return;
-
     const pending = cwssBridgePending.get(message.requestId);
     if (!pending) return;
 
